@@ -1,0 +1,94 @@
+
+#default setting
+server:
+  port: 10009
+spring:
+  application:
+    name: munzi-log
+  profiles:
+    group:
+      local: local-munzi-log
+      dev: dev-munzi-log
+      prod: prod-munzi-log
+    active: local
+  jackson:
+    serialization:
+      write_dates_as_timestamps: true
+  output:
+    ansi:
+      enabled: ALWAYS
+
+# logging
+# log file full path
+logging:
+  file:
+    name: /apps/logs/munzi-log/logback-munzi-log.log
+  logback:
+    rollingpolicy:
+      max-file-size: 500MB
+      max-history: 30
+  # log level: default
+  level:
+    root: INFO
+    # log level: package
+    io.dkargo.doms.api: INFO
+    io.dkargo.doms.core: INFO
+    # spring
+    org.springframework.web: ERROR
+  # log formatter
+  pattern:
+    console: "%clr(%-5level) %clr(%date){cyan} %clr(%thread){yellow} %clr([%logger{36}.%M:%line]){blue} %msg%n"
+    file: "%clr(%-5level) %clr(%date){cyan} %clr(%thread){yellow} %clr([%logger{36}.%M:%line]){blue} %msg%n"
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: local-munzi-log
+
+logging:
+  file:
+    name: /apps/logs/munzi-log/logback-munzi-log.log
+  level:
+    root: INFO
+    # log level: package
+    io.dkargo.doms.api: DEBUG
+    io.dkargo.doms.core: DEBUG
+    # spring
+    org.springframework.web: ERROR
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: dev-munzi-log
+
+logging:
+  file:
+    name: /apps/logs/munzi-log/logback-munzi-log.log
+  level:
+    root: INFO
+    # log level: package
+    io.dkargo.doms.api: INFO
+    io.dkargo.doms.core: INFO
+    # spring
+    org.springframework.web: ERROR
+---
+
+spring:
+  config:
+    activate:
+      on-profile: prod-munzi-log
+
+logging:
+  file:
+    name: /apps/logs/munzi-log/logback-munzi-log.log
+  level:
+    root: INFO
+    # log level: package
+    io.dkargo.doms.api: INFO
+    io.dkargo.doms.core: INFO
+    # spring
+    org.springframework.web: ERROR
