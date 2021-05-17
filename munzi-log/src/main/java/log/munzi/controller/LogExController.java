@@ -1,25 +1,35 @@
 package log.munzi.controller;
 
+import log.munzi.dto.ReqHello;
+import log.munzi.dto.ResHello;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
 @Slf4j
+@RequestMapping("/hello")
 public class LogExController {
 
-    @GetMapping("/hello")
+    @GetMapping("")
     @ResponseStatus(HttpStatus.OK)
-    public void hello() {
+    public String hello(@RequestParam String name) {
 
-        log.trace("hello trace");
-        log.info("hello info");
-        log.debug("hello debug");
-        log.error("hello error");
+        log.trace("trace hello {}", name);
+        log.info("info hello {}", name);
+        log.debug("debug hello {}", name);
+        log.error("error hello {}", name);
 
+        return "hello " + name;
+    }
+
+    @PostMapping("")
+    @ResponseStatus(HttpStatus.OK)
+    public ResHello helloPost(@RequestBody @Validated ReqHello request) {
+
+        return new ResHello(request.getName());
     }
 }
