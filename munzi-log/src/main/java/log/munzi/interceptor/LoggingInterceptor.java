@@ -24,17 +24,16 @@ public class LoggingInterceptor implements HandlerInterceptor {
         final ContentCachingRequestWrapper cachingRequest = (ContentCachingRequestWrapper) request;
         final ContentCachingResponseWrapper cachingResponse = (ContentCachingResponseWrapper) response;
 
-        //TODO body만 찍지 말고 request url, method랑 param도 찍자
         if (cachingRequest.getContentType() != null && cachingRequest.getContentType().contains("application/json")) {
             cachingRequest.getContentAsByteArray();
             if (cachingRequest.getContentAsByteArray().length != 0) {
-                log.info("Request Body : {}", objectMapper.readTree(cachingRequest.getContentAsByteArray()));
+                log.info("REQ BODY) {}", objectMapper.readTree(cachingRequest.getContentAsByteArray()));
             }
         }
         if (cachingResponse.getContentType() != null && cachingResponse.getContentType().contains("application/json")) {
             cachingResponse.getContentAsByteArray();
             if (cachingResponse.getContentAsByteArray().length != 0) {
-                log.info("Response Body : {}", objectMapper.readTree(cachingResponse.getContentAsByteArray()));
+                log.info("RES BODY) {}", objectMapper.readTree(cachingResponse.getContentAsByteArray()));
             }
         }
 

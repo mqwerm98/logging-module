@@ -28,6 +28,8 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
     compile group: 'org.springframework.boot', name: 'spring-boot-starter-validation', version: "2.3.7.RELEASE"
 
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-aop', version: '2.4.5'
