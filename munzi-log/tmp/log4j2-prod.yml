@@ -1,0 +1,60 @@
+Configutation:
+  status: info
+
+  Properties:
+    Property:
+      name: log-path
+      value: "/apps/logs/munzi-log"
+
+  Appenders:
+    Console:
+      name: Console_Appender
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "%clr(%-5level) %clr(%date){cyan} %clr(%thread){yellow} %clr([%logger{36}.%M:%line]){blue} %msg%n"
+    File:
+      name: File_Appender
+      fileName: ${log-path}/munzi-log.log
+      PatternLayout:
+        pattern: "%clr(%-5level) %clr(%date){cyan} %clr(%thread){yellow} %clr([%logger{36}.%M:%line]){blue} %msg%n"
+    RollingFile:
+      - name: RollingFile_Appender
+        fileName: ${log-path}/munzi-log.log
+        filePattern: "${log-path}/archive/munzi-log.log.%d{yyyy-MM-dd-hh-mm}.gz"
+        PatternLayout:
+          pattern: "%clr(%-5level) %clr(%date){cyan} %clr(%thread){yellow} %clr([%logger{36}.%M:%line]){blue} %msg%n"
+        Policies:
+          SizeBasedTriggeringPolicy:
+            size: 500 MB
+        DefaultRollOverStrategy:
+          max: 30
+
+  Loggers:
+    Root:
+      level: info
+      AppenderRef:
+        - ref: Console_Appender
+        - ref: File_Appender
+        - ref: RollingFile_Appender
+    Logger:
+      - name: log.munzi
+        additivity: true
+        level: info
+        AppenderRef:
+          - ref: Console_Appender
+          - ref: File_Appender
+          - ref: RollingFile_Appender
+      - name: org.springframework.web
+          additivity: true
+          level: error
+          AppenderRef:
+            - ref: Console_Appender
+            - ref: File_Appender
+            - ref: RollingFile_Appender
+      - name: lorg.springframework.web.filter
+          additivity: true
+          level: debug
+          AppenderRef:
+            - ref: Console_Appender
+            - ref: File_Appender
+            - ref: RollingFile_Appender

@@ -30,6 +30,10 @@ public class LogExController {
     @ResponseStatus(HttpStatus.OK)
     public ResHello helloPost(@RequestBody @Validated ReqHello request) {
 
+        log.info("name1 : {}", request.getName());
+        log.info("name2 : {}", request.getName());
+        log.info("name3 : {}", request.getName());
+
         return new ResHello(request.getName());
     }
 }

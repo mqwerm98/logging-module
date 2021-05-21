@@ -12,6 +12,29 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
+
+    all {
+        // log4j2를 사용하기 위해, spring의 default인 logback을 제외
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+    }
+}
+
+ext{
+    version_logback = '1.2.3'
+    version_slf4j = '1.7.30'
+    version_lombok = '1.18.16'
+    version_jackson = '2.11.0'
+    version_swagger = '2.9.2'
+    version_kafka = '2.4.1.RELEASE'
+    version_java = '1.8'
+    version_modelmapper = '2.3.0'
+    version_validation = '2.3.7.RELEASE'
+    version_junit = '5.2.0'
+    version_jetty = '1.5.7.RELEASE'
+    project_build_sourceEncoding = 'UTF-8'
+    version_aop = '2.4.5'
+    version_jackson = '2.10.3'
+    version_slf4j = '1.7.18'
 }
 
 repositories {
@@ -19,6 +42,10 @@ repositories {
 }
 
 dependencies {
+    compile group: 'org.slf4j', name: 'jcl-over-slf4j', version: "${version_slf4j}"
+    compile group: 'org.slf4j', name: 'log4j-over-slf4j', version: "${version_slf4j}"
+    compile group: 'org.slf4j', name: 'jul-over-slf4j', version: "${version_slf4j}"
+
     implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -28,11 +55,17 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-jetty', version: "${version_jetty}"
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-aop', version: "${version_aop}"
 
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-validation', version: "2.3.7.RELEASE"
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-validation', version: "${version_validation}"
 
-    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-aop', version: '2.4.5'
+    // log4j2
+    compile 'org.springframework.boot:spring-boot-starter-log4j2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: "${version_jackson}"
+
 }
 
 test {

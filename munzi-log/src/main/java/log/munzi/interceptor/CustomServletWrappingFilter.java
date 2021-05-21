@@ -16,9 +16,9 @@ public class CustomServletWrappingFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        ContentCachingRequestWrapper wrappingRequest = new ContentCachingRequestWrapper(request);
-        ContentCachingResponseWrapper wrappingResponse = new ContentCachingResponseWrapper(response);
-        filterChain.doFilter(wrappingRequest, wrappingResponse);
-        wrappingResponse.copyBodyToResponse(); //body값을 copy해 캐시로 저장
+//        ContentCachingRequestWrapper wrappingRequest = new ContentCachingRequestWrapper(request);
+//        ContentCachingResponseWrapper wrappingResponse = new ContentCachingResponseWrapper(response);
+//        filterChain.doFilter(wrappingRequest, wrappingResponse);
+//        wrappingResponse.copyBodyToResponse(); //body값을 copy해 캐시로 저장
     }
 }
