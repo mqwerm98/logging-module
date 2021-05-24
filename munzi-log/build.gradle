@@ -1,17 +1,76 @@
+import java.time.LocalDateTime
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+
 plugins {
     id 'org.springframework.boot' version '2.4.5'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
+    id 'maven'
+    id 'maven-publish'
 }
 
-group = 'log.munzi'
-version = '0.0.1-SNAPSHOT'
+ext {
+    set('snippetsDir', file("build/generated-snippets"))
+
+    version_project = project.properties["app.version"]
+
+    version_slf4j = '1.7.30'
+    version_logback = '1.2.3'
+    version_log4jdbc = '1.16'
+
+    version_lombok = '1.18.16'
+
+    version_commons_lang = '3.9'
+    version_commons_codec = '1.14'
+
+    version_jackson = '2.11.0'
+
+    version_kafka = '2.4.1.RELEASE'
+
+    version_modelmapper = '2.3.0'
+    version_validation = '2.3.7.RELEASE'
+    version_junit = '5.2.0'
+
+    version_aop = '2.4.5'
+
+    version_swagger = '2.9.2'
+
+    version_jetty = '1.5.7.RELEASE'
+
+    version_java = '1.8'
+    project_build_sourceEncoding = 'UTF-8'
+}
+
+group = project.properties["app.group"]
+version = ext.version_project
 sourceCompatibility = '1.8'
 
+compileJava.options.encoding = ext.project_build_sourceEncoding
+
+springBoot {
+    buildInfo {
+        properties {
+            additional = [
+                    'fullVersion' : project.properties["app.version"] + '.' + LocalDateTime.ofInstant(properties["time"], ZoneOffset.systemDefault()).format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+            ]
+        }
+    }
+}
+
+bootJar {
+    archiveName = project.properties["app.name"] + '-' + project.properties["app.version"] + "sb.${extension}"
+}
+
 configurations {
+    developmentOnly
+    runtimeClasspath {
+        extendsFrom developmentOnly
+    }
     compileOnly {
         extendsFrom annotationProcessor
     }
+    compile.exclude module: "spring-boot-starter-tomcat"
 
     all {
         // log4j2를 사용하기 위해, spring의 default인 logback을 제외
@@ -19,32 +78,19 @@ configurations {
     }
 }
 
-ext{
-    version_logback = '1.2.3'
-    version_slf4j = '1.7.30'
-    version_lombok = '1.18.16'
-    version_jackson = '2.11.0'
-    version_swagger = '2.9.2'
-    version_kafka = '2.4.1.RELEASE'
-    version_java = '1.8'
-    version_modelmapper = '2.3.0'
-    version_validation = '2.3.7.RELEASE'
-    version_junit = '5.2.0'
-    version_jetty = '1.5.7.RELEASE'
-    project_build_sourceEncoding = 'UTF-8'
-    version_aop = '2.4.5'
-    version_jackson = '2.10.3'
-    version_slf4j = '1.7.18'
-}
-
 repositories {
     mavenCentral()
+    jcenter()
 }
 
 dependencies {
-    compile group: 'org.slf4j', name: 'jcl-over-slf4j', version: "${version_slf4j}"
-    compile group: 'org.slf4j', name: 'log4j-over-slf4j', version: "${version_slf4j}"
-    compile group: 'org.slf4j', name: 'jul-over-slf4j', version: "${version_slf4j}"
+//    implementation group: 'org.slf4j', name: 'slf4j-api', version: "${version_slf4j}"
+//    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: log4j2Version
+//    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: log4j2Version
+
+//    compile group: 'org.slf4j', name: 'jcl-over-slf4j', version: "${version_slf4j}"
+//    compile group: 'org.slf4j', name: 'log4j-over-slf4j', version: "${version_slf4j}"
+//    compile group: 'org.slf4j', name: 'jul-to-slf4j', version: "${version_slf4j}"
 
     implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
