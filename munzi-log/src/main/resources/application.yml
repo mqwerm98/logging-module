@@ -1,3 +1,62 @@
+## ---------- personal custom setting
+#custom:
+#  logging:
+#    level:
+#      default: INFO
+##    format: "%clr(%-5level) %clr(%date){cyan} %clr(%thread){yellow} %clr([%logger{36}.%M:%line]){blue} %msg%n"
+#    format: "%style{%d{yyyy/MM/dd HH:mm:ss,SSS}}{cyan} %highlight{[%-5p]}{FATAL=bg_red, ERROR=red, INFO=green, DEBUG=blue} [%C] %style{[%t]}{yellow}- %m%n -"
+#
+## ---------- logging
+##logging.config: classpath:logback-${spring.profiles.active}.xml
+#logging:
+#  # level
+#  level:
+#    # default
+#    root: ${custom.logging.level.default}
+#    # packages
+#    com.withwiz: INFO
+#    com.withwiz.cryptocurrency: INFO
+#    # spring
+#    org.springframework.web: ERROR
+#    # hibernate
+#    org.hibernate: ERROR
+#    org.hibernate.SQL: DEBUG
+#    #org.hibernate.type.descriptor.sql.BasicBinder=TRACE
+#    # log4jdbc
+#    jdbc: OFF
+#    # for connection "open" or "close"
+#    jdbc.connection: ERROR
+#    # for sql
+#    jdbc.sqlonly: DEBUG
+#    # for query time(milliseconds)
+#    jdbc.sqltiming: OFF
+#    # alls except for resultset
+#    jdbc.audit: OFF
+#    # with resultset
+#    jdbc.resultset: OFF
+#    # with resultset table
+#    jdbc.resultsettable: DEBUG
+#    # hikari
+#    com.zaxxer.hikari.HikariDataSource: ERROR
+#    # howtodoinjava
+#    com.howtodoinjav: INFO
+#  file:
+#    # log file full path
+#    name: /apps/logs/siteweb/siteweb.log
+#    # max history(days)
+#    max-history: 30
+#    # max size per file
+#    max-size: 500MB
+#  # log formatter
+#  pattern:
+#    console: ${custom.logging.format}
+#    file: ${custom.logging.format}
+
+spring.output:
+    ansi:
+      enabled: ALWAYS
+
+
 #default setting
 server:
   port: 10009
@@ -13,10 +72,6 @@ spring:
   jackson:
     serialization:
       write_dates_as_timestamps: true
-  output:
-    ansi:
-      enabled: ALWAYS
-
 
 ---
 
@@ -25,8 +80,8 @@ spring:
     activate:
       on-profile: local-munzi-log
 
-#logging:
-#  config: classpath:log4j2-local.yml
+logging:
+  config: classpath:log4j2.yml
 
 ---
 

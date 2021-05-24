@@ -13,7 +13,7 @@ Configutation:
       name: Console_Appender
       target: SYSTEM_OUT
       PatternLayout:
-        pattern: "%clr(%-5level) %clr(%date){cyan} %clr(%thread){yellow} %clr([%logger{36}.%M:%line]){blue} %msg%n"
+        pattern: "%highlight{[%-5p]}{FATAL=bg_red, ERROR=red, INFO=green, DEBUG=blue} %style{%d{yyyy/MM/dd HH:mm:ss,SSS}}{cyan} [%C] %style{[%t]}{yellow}- %m%n"
     File:
       name: File_Appender
       fileName: ${log-path}/munzi-log.log
