@@ -1,40 +1,44 @@
-Configutation:
+Configuration:
   name: log4j2 local
   status: INFO
   monitorInterval: 300
 
   Properties:
     Property:
-      name: log-path
-      value: "/apps/logs/munzi-log"
+      - name: log-path
+        value: "/apps/logs/munzi-log"
+      - name: log-filename
+        value: "a.log"
+      - name: log-pattern
+        value: "%highlight{[%-5p]}{FATAL=bg_red, ERROR=red, INFO=green, DEBUG=blue} %style{%d{yyyy/MM/dd HH:mm:ss,SSS}}{cyan} [%C] %style{[%t]}{yellow}- %m%n"
 
   Appenders:
     Console:
       name: Console_Appender
       target: SYSTEM_OUT
       PatternLayout:
-        pattern: "%highlight{[%-5p]}{FATAL=bg_red, ERROR=red, INFO=green, DEBUG=blue} %style{%d{yyyy/MM/dd HH:mm:ss,SSS}}{cyan} [%C] %style{[%t]}{yellow}- %m%n"
+        pattern: ${log-pattern}
     File:
       name: File_Appender
-      fileName: ${log-path}/munzi-log.log
+      fileName: ${log-path}/${log-filename}
       PatternLayout:
-        pattern: "%clr(%-5level) %clr(%date){cyan} %clr(%thread){yellow} %clr([%logger{36}.%M:%line]){blue} %msg%n"
+        pattern: ${log-pattern}
     RollingFile:
-      - name: RollingFile_Appender
-        fileName: ${log-path}/munzi-log.log
-        filePattern: "${log-path}/archive/munzi-log.log.%d{yyyy-MM-dd-hh-mm}.gz"
-        PatternLayout:
-          pattern: "%clr(%-5level) %clr(%date){cyan} %clr(%thread){yellow} %clr([%logger{36}.%M:%line]){blue} %msg%n"
-        Policies:
-          SizeBasedTriggeringPolicy:
-            size: 500 MB
-        DefaultRollOverStrategy:
-          max: 30
-          Delete:
-            basePath: "${log-path}/archive"
-            maxDepth: "1"
-            IfAccumulatedFileCount:
-              exceeds: 31
+      name: RollingFile_Appender
+      fileName: ${log-path}/${log-filename}
+      filePattern: "${log-path}/archive/${log-filename}.%d{yyyy-MM-dd-hh-mm}.gz"
+      PatternLayout:
+        pattern: ${log-pattern}
+      Policies:
+        SizeBasedTriggeringPolicy:
+          size: 500 MB
+      DefaultRollOverStrategy:
+        max: 30
+        Delete:
+          basePath: "${log-path}/archive"
+          maxDepth: "1"
+          IfAccumulatedFileCount:
+            exceeds: 31
 
   Loggers:
     Root:
@@ -78,4 +82,4 @@ Configutation:
         AppenderRef:
           - ref: Console_Appender
           - ref: File_Appender
-          - ref: RollingFile_Appende
+          - ref: RollingFile_Appender
