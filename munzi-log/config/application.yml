@@ -55,12 +55,10 @@
 #    file: ${custom.logging.format}
 
 
-spring.output:
-    ansi:
-      enabled: ALWAYS
-
-
 #default setting
+app:
+  name: munzi-log
+  version: 1.0.0
 server:
   port: 10009
 spring:
@@ -75,6 +73,9 @@ spring:
   jackson:
     serialization:
       write_dates_as_timestamps: true
+  output:
+    ansi:
+      enabled: ALWAYS
 
 ---
 
@@ -84,7 +85,7 @@ spring:
       on-profile: local-munzi-log
 
 logging:
-  config: file:/Users/uni4love/project/workspace/deleo/git-repo/logging-module/munzi-log/config/log4j2.yml
+  config: file:/Users/hjpark/Documents/dkargo/logging-module/munzi-log/config/log4j2-local.yml
 
 ---
 
@@ -93,8 +94,8 @@ spring:
     activate:
       on-profile: dev-munzi-log
 
-#logging:
-#  config: classpath:log4j2-dev.yml
+logging:
+  config: file:/Users/hjpark/Documents/dkargo/logging-module/munzi-log/config/log4j2-dev.yml
 ---
 
 spring:
@@ -102,5 +103,5 @@ spring:
     activate:
       on-profile: prod-munzi-log
 
-#logging:
-#  config: classpath:log4j2-prod.yml
+logging:
+  config: file:/Users/hjpark/Documents/dkargo/logging-module/munzi-log/config/log4j2-prod.yml

@@ -92,12 +92,12 @@ dependencies {
 //    compile group: 'org.slf4j', name: 'log4j-over-slf4j', version: "${version_slf4j}"
 //    compile group: 'org.slf4j', name: 'jul-to-slf4j', version: "${version_slf4j}"
 
-    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+//    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+//    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    runtimeOnly 'com.h2database:h2'
+//    runtimeOnly 'com.h2database:h2'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
@@ -112,6 +112,7 @@ dependencies {
     testImplementation 'org.springframework.boot:spring-boot-starter-log4j2'
     compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: "${version_jackson}"
 
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-web', version: '2.14.1'
 }
 
 test {

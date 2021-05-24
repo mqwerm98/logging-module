@@ -1,26 +1,21 @@
 Configuration:
   name: log4j2 local
   status: INFO
-  monitorInterval: 300
+  monitorInterval: 30
 
   Properties:
     Property:
       - name: log-path
         value: "/apps/logs/munzi-log"
       - name: log-filename
-        value: "a.log"
+        value: "munzi-log.log"
       - name: log-pattern
-        value: "%highlight{[%-5p]}{FATAL=bg_red, ERROR=red, INFO=green, DEBUG=blue} %style{%d{yyyy/MM/dd HH:mm:ss,SSS}}{cyan} [%C] %style{[%t]}{yellow}- %m%n"
+        value: "%highlight{[%-5p]}{FATAL=bg_red, ERROR=red, INFO=green, DEBUG=blue} %style{%d{yyyy/MM/dd HH:mm:ss,SSS}}{cyan} %style{[%t:%tp]}{yellow} %style{[%c{1.}.%M:%L]}{blue} %m%n"
 
   Appenders:
     Console:
       name: Console_Appender
       target: SYSTEM_OUT
-      PatternLayout:
-        pattern: ${log-pattern}
-    File:
-      name: File_Appender
-      fileName: ${log-path}/${log-filename}
       PatternLayout:
         pattern: ${log-pattern}
     RollingFile:
@@ -45,7 +40,6 @@ Configuration:
       level: INFO
       AppenderRef:
         - ref: Console_Appender
-        - ref: File_Appender
         - ref: RollingFile_Appender
     Logger:
       - name: log.munzi
@@ -53,33 +47,28 @@ Configuration:
         level: DEBUG
         AppenderRef:
           - ref: Console_Appender
-          - ref: File_Appender
           - ref: RollingFile_Appender
       - name: org.springframework.web
         additivity: false
         level: ERROR
         AppenderRef:
           - ref: Console_Appender
-          - ref: File_Appender
           - ref: RollingFile_Appender
       - name: org.springframework.web.filter
         additivity: false
         level: DEBUG
         AppenderRef:
           - ref: Console_Appender
-          - ref: File_Appender
           - ref: RollingFile_Appender
       - name: org.hibernate
         additivity: false
         level: ERROR
         AppenderRef:
           - ref: Console_Appender
-          - ref: File_Appender
           - ref: RollingFile_Appender
       - name: org.hibernate.SQL
         additivity: false
         level: DEBUG
         AppenderRef:
           - ref: Console_Appender
-          - ref: File_Appender
           - ref: RollingFile_Appender
