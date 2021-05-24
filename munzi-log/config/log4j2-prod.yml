@@ -10,7 +10,7 @@ Configuration:
       - name: log-filename
         value: "munzi-log.log"
       - name: log-pattern
-        value: "%highlight{[%-5p]}{FATAL=bg_red, ERROR=red, INFO=green, DEBUG=blue} %style{%d{yyyy/MM/dd HH:mm:ss.SSS}}{cyan} %style{[%t:%tp]}{yellow} %style{[%C{1.}.%M:%L]}{blue} %m%n"
+        value: "%highlight{[%-5p]}{FATAL=bg_red, ERROR=red, INFO=green, DEBUG=blue} %style{%d{yyyy/MM/dd HH:mm:ss.SSS}}{cyan} %style{%t}{yellow} %style{[%C{1.}.%M:%L]}{blue} %m%n"
 
   Appenders:
     Console:
