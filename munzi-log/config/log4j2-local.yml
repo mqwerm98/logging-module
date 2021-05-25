@@ -35,38 +35,51 @@ Configuration:
           IfAccumulatedFileCount:
             exceeds: 31
 
+#  Async:
+#    - name: Async
+##      includeLocation: true
+#        AppenderRef:
+#          - ref: Console_Appender
+#          - ref: RollingFile_Appender
+
   Loggers:
     Root:
+      includeLocation: true
       level: INFO
       AppenderRef:
         - ref: Console_Appender
         - ref: RollingFile_Appender
-    Logger:
+    AsyncLogger:
       - name: log.munzi
+        includeLocation: true
         additivity: false
         level: DEBUG
         AppenderRef:
           - ref: Console_Appender
           - ref: RollingFile_Appender
       - name: org.springframework.web
+        includeLocation: true
         additivity: false
         level: ERROR
         AppenderRef:
           - ref: Console_Appender
           - ref: RollingFile_Appender
       - name: org.springframework.web.filter
+        includeLocation: true
         additivity: false
         level: DEBUG
         AppenderRef:
           - ref: Console_Appender
           - ref: RollingFile_Appender
       - name: org.hibernate
+        includeLocation: true
         additivity: false
         level: ERROR
         AppenderRef:
           - ref: Console_Appender
           - ref: RollingFile_Appender
       - name: org.hibernate.SQL
+        includeLocation: true
         additivity: false
         level: DEBUG
         AppenderRef:

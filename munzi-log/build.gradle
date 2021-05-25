@@ -111,8 +111,12 @@ dependencies {
     compile 'org.springframework.boot:spring-boot-starter-log4j2'
     testImplementation 'org.springframework.boot:spring-boot-starter-log4j2'
     compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: "${version_jackson}"
-
     implementation group: 'org.apache.logging.log4j', name: 'log4j-web', version: '2.14.1'
+    implementation group: 'com.lmax', name: 'disruptor', version: '3.4.4'
+
+    // log4jdbc-log4j2
+    compile group: 'org.bgee.log4jdbc-log4j2', name: 'log4jdbc-log4j2-jdbc4.1', version: '1.16'
+
 }
 
 test {
