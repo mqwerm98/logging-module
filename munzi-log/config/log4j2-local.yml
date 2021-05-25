@@ -35,13 +35,6 @@ Configuration:
           IfAccumulatedFileCount:
             exceeds: 31
 
-#  Async:
-#    - name: Async
-##      includeLocation: true
-#        AppenderRef:
-#          - ref: Console_Appender
-#          - ref: RollingFile_Appender
-
   Loggers:
     Root:
       includeLocation: true
