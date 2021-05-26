@@ -1,7 +1,7 @@
 Configuration:
   name: log4j2 local
   status: INFO
-  monitorInterval: 30
+  monitorInterval: 5
 
   Properties:
     Property:
@@ -9,6 +9,8 @@ Configuration:
         value: "/apps/logs/munzi-log"
       - name: log-filename
         value: "munzi-log.log"
+      - name: log-db-filename
+        value: "munzi-db-log.log"
       - name: log-pattern
         value: "%highlight{[%-5p]}{FATAL=bg_red, ERROR=red, INFO=green, DEBUG=blue} %style{%d{yyyy/MM/dd HH:mm:ss.SSS}}{cyan} %style{%t}{yellow} %style{[%C{1.}.%M:%L]}{blue} %m%n"
 
@@ -19,62 +21,135 @@ Configuration:
       PatternLayout:
         pattern: ${log-pattern}
     RollingFile:
-      name: RollingFile_Appender
-      fileName: ${log-path}/${log-filename}
-      filePattern: ${log-path}/archive/${log-filename}.%d{yyyy-MM-dd-hh-mm}.gz
-      PatternLayout:
-        pattern: ${log-pattern}
-      Policies:
-        SizeBasedTriggeringPolicy:
-          size: 500 MB
-      DefaultRollOverStrategy:
-        max: 30
-        Delete:
-          basePath: ${log-path}/archive
-          maxDepth: 1
-          IfAccumulatedFileCount:
-            exceeds: 31
+      - name: RollingFile_Appender
+        fileName: ${log-path}/${log-filename}
+        filePattern: ${log-path}/archive/${log-filename}.%d{yyyy-MM-dd-hh-mm}.gz
+        PatternLayout:
+          pattern: ${log-pattern}
+        Policies:
+          SizeBasedTriggeringPolicy:
+            size: 500 MB
+        DefaultRollOverStrategy:
+          max: 30
+          Delete:
+            basePath: ${log-path}/archive
+            maxDepth: 1
+            IfAccumulatedFileCount:
+              exceeds: 31
+      - name: RollingDBFile_Appender
+        fileName: ${log-path}/${log-db-filename}
+        filePattern: ${log-path}/archive/${log-db-filename}.%d{yyyy-MM-dd-hh-mm}.gz
+        PatternLayout:
+          pattern: ${log-pattern}
+        Policies:
+          SizeBasedTriggeringPolicy:
+            size: 500 MB
+        DefaultRollOverStrategy:
+          max: 30
+          Delete:
+            basePath: ${log-path}/archive
+            maxDepth: 1
+            IfAccumulatedFileCount:
+              exceeds: 31
 
   Loggers:
     Root:
-      includeLocation: true
+      includeLocation: TRUE
       level: INFO
       AppenderRef:
         - ref: Console_Appender
-        - ref: RollingFile_Appender
-    AsyncLogger:
-      - name: log.munzi
-        includeLocation: true
-        additivity: false
-        level: DEBUG
-        AppenderRef:
-          - ref: Console_Appender
-          - ref: RollingFile_Appender
-      - name: org.springframework.web
-        includeLocation: true
-        additivity: false
-        level: ERROR
-        AppenderRef:
-          - ref: Console_Appender
-          - ref: RollingFile_Appender
-      - name: org.springframework.web.filter
-        includeLocation: true
-        additivity: false
-        level: DEBUG
-        AppenderRef:
-          - ref: Console_Appender
-          - ref: RollingFile_Appender
-      - name: org.hibernate
-        includeLocation: true
-        additivity: false
-        level: ERROR
-        AppenderRef:
-          - ref: Console_Appender
-          - ref: RollingFile_Appender
-      - name: org.hibernate.SQL
-        includeLocation: true
-        additivity: false
-        level: DEBUG
-        AppenderRef:
-          - ref: Console_Appender
-          - ref: RollingFile_Appender
+        - ref: RollingDBFile_Appender
+#    AsyncLogger:
+#      # package
+#      - name: log.munzi
+#        includeLocation: TRUE
+#        additivity: FALSE
+#        level: DEBUG
+#        AppenderRef:
+#          - ref: Console_Appender
+#          - ref: RollingFile_Appender
+#
+#      - name: org.springframework.web
+#        includeLocation: TRUE
+#        additivity: FALSE
+#        level: ERROR
+#        AppenderRef:
+#          - ref: Console_Appender
+#          - ref: RollingFile_Appender
+#      # for request/response filter
+#      - name: org.springframework.web.filter
+#        includeLocation: TRUE
+#        additivity: FALSE
+#        level: DEBUG
+#        AppenderRef:
+#          - ref: Console_Appender
+#          - ref: RollingFile_Appender
+#
+#      - name: org.hibernate
+#        includeLocation: TRUE
+#        additivity: FALSE
+#        level: ERROR
+#        AppenderRef:
+#          - ref: RollingDBFile_Appender
+#      - name: org.hibernate.SQL
+#        includeLocation: TRUE
+#        additivity: FALSE
+#        level: DEBUG
+#        AppenderRef:
+#          - ref: RollingDBFile_Appender
+#
+#      # log4jdbc
+#      - name: jdbc
+#        includeLocation: TRUE
+#        level: TRACE
+#        AppenderRef:
+#          - ref: RollingDBFile_Appender
+#      # for connection "open" or "close"
+#      - name: jdbc.connection
+#        includeLocation: TRUE
+#        level: ERROR
+#        AppenderRef:
+#          - ref: RollingDBFile_Appender
+#      # for sql
+#      - name: jdbc.sqlonly
+#        includeLocation: TRUE
+#        level: DEBUG
+#        AppenderRef:
+#          - ref: RollingDBFile_Appender
+#      # for query time(ms)
+#      - name: jdbc.sqltiming
+#        includeLocation: TRUE
+#        level: ERROR
+#        AppenderRef:
+#          - ref: RollingDBFile_Appender
+#      # alls except for resultset
+#      - name: jdbc.audit
+#        includeLocation: TRUE
+#        level: ERROR
+#        AppenderRef:
+#          - ref: RollingDBFile_Appender
+#      # with resultset
+#      - name: jdbc.resultset
+#        includeLocation: TRUE
+#        level: ERROR
+#        AppenderRef:
+#          - ref: RollingDBFile_Appender
+#      # with resultset table
+#      - name: jdbc.resultsettable
+#        includeLocation: TRUE
+#        level: DEBUG
+#        AppenderRef:
+#          - ref: RollingDBFile_Appender
+#      # hikari
+#      - name: com.zaxxer.hikari.HikariDataSource
+#        includeLocation: TRUE
+#        level: ERROR
+#        AppenderRef:
+#          - ref: RollingDBFile_Appender
+#
+#      - name: net.sf.log4jdbc.log.log4j2.Log4j2SpyLogDelegator
+#        includeLocation: TRUE
+#        additivity: FALSE
+#        level: TRACE
+#        AppenderRef:
+#          - ref: RollingDBFile_Appender

@@ -2,17 +2,21 @@ package log.munzi.controller;
 
 import log.munzi.dto.ReqHello;
 import log.munzi.dto.ResHello;
+import log.munzi.service.MunziService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+
 @RestController
 @RequiredArgsConstructor
 @Slf4j
 @RequestMapping("/hello")
 public class LogExController {
+
+    private final MunziService munziService;
 
     @GetMapping("")
     @ResponseStatus(HttpStatus.OK)
@@ -21,19 +25,19 @@ public class LogExController {
         log.trace("trace hello {}", name);
         log.info("info hello {}", name);
         log.debug("debug hello {}", name);
+        log.warn("warn hello {}", name);
         log.error("error hello {}", name);
 
-        return "hello " + name;
+        return munziService.getNames();
     }
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.OK)
     public ResHello helloPost(@RequestBody @Validated ReqHello request) {
 
-        log.info("name1 : {}", request.getName());
-        log.info("name2 : {}", request.getName());
-        log.info("name3 : {}", request.getName());
+        log.debug("name : {}", request.getName());
 
+        munziService.createMunzi(request.getName());
         return new ResHello(request.getName());
     }
 }
