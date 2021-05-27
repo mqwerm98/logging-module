@@ -127,4 +127,4 @@ Configuration:
 #            onMismatch: DENY
           - marker: LOG4JDBC_RESULTSETTABLE # jdbc.resultsettable
             onMatch: ACCEPT
-            onMismatch: ACCEPT
+            onMismatch: DENY
