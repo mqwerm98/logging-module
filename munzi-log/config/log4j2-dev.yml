@@ -19,21 +19,36 @@ Configuration:
       PatternLayout:
         pattern: ${log-pattern}
     RollingFile:
-      name: RollingFile_Appender
-      fileName: ${log-path}/${log-filename}
-      filePattern: ${log-path}/archive/${log-filename}.%d{yyyy-MM-dd-hh-mm}.gz
-      PatternLayout:
-        pattern: ${log-pattern}
-      Policies:
-        SizeBasedTriggeringPolicy:
-          size: 500 MB
-      DefaultRollOverStrategy:
-        max: 30
-        Delete:
-          basePath: ${log-path}/archive
-          maxDepth: 1
-          IfAccumulatedFileCount:
-            exceeds: 31
+      - name: RollingFile_Appender
+        fileName: ${log-path}/${log-filename}
+        filePattern: ${log-path}/archive/${log-filename}.%d{yyyy-MM-dd-hh-mm}.gz
+        PatternLayout:
+          pattern: ${log-pattern}
+        Policies:
+          SizeBasedTriggeringPolicy:
+            size: 500 MB
+        DefaultRollOverStrategy:
+          max: 30
+          Delete:
+            basePath: ${log-path}/archive
+            maxDepth: 1
+            IfAccumulatedFileCount:
+              exceeds: 31
+      - name: RollingDBFile_Appender
+          fileName: ${log-path}/${log-db-filename}
+          filePattern: ${log-path}/archive/${log-db-filename}.%d{yyyy-MM-dd-hh-mm}.gz
+          PatternLayout:
+            pattern: ${log-pattern}
+          Policies:
+            SizeBasedTriggeringPolicy:
+              size: 500 MB
+          DefaultRollOverStrategy:
+            max: 30
+            Delete:
+              basePath: ${log-path}/archive
+              maxDepth: 1
+              IfAccumulatedFileCount:
+                exceeds: 31
 
   Loggers:
     Root:
@@ -41,7 +56,7 @@ Configuration:
       level: INFO
       AppenderRef:
         - ref: Console_Appender
-        - ref: RollingFile_Appender
+#        - ref: RollingFile_Appender
     AsyncLogger:
       - name: log.munzi
         includeLocation: true
@@ -78,3 +93,34 @@ Configuration:
         AppenderRef:
           - ref: Console_Appender
           - ref: RollingFile_Appender
+
+      - name: log4jdbc.log4j2
+          includeLocation: TRUE
+          additivity: FALSE
+          level: DEBUG
+          AppenderRef:
+            - ref: Console_Appender
+            - ref: RollingFile_Appender
+            - ref: RollingDBFile_Appender
+          MarkerFilter:
+            #          - marker: LOG4JDBC_JDBC # jdbc
+            #            onMatch: DENY
+            #            onMismatch: NEUTRAL
+            #          - marker: LOG4JDBC_CONNECTION # jdbc.connection
+            #            onMatch: DENY
+            #            onMismatch: DENY
+            #          - marker: LOG4JDBC_NON_STATEMENT # jdbc.sqltiming
+            #            onMatch: ACCEPT
+            #            onMismatch: DENY
+            #          - marker: LOG4JDBC_SQL
+            #            onMatch: DENY
+            #            onMismatch: DENY
+            #          - marker: LOG4JDBC_AUDIT # jdbc.audit
+            #            onMatch: DENY
+            #            onMismatch: DENY
+            #          - marker: LOG4JDBC_RESULTSET # jdbc.resultset
+            #            onMatch: DENY
+            #            onMismatch: DENY
+            - marker: LOG4JDBC_RESULTSETTABLE # jdbc.resultsettable
+              onMatch: ACCEPT
+              onMismatch: ACCEPT

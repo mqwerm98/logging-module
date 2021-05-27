@@ -58,98 +58,73 @@ Configuration:
       level: INFO
       AppenderRef:
         - ref: Console_Appender
-        - ref: RollingDBFile_Appender
-#    AsyncLogger:
-#      # package
-#      - name: log.munzi
-#        includeLocation: TRUE
-#        additivity: FALSE
-#        level: DEBUG
-#        AppenderRef:
-#          - ref: Console_Appender
-#          - ref: RollingFile_Appender
-#
-#      - name: org.springframework.web
-#        includeLocation: TRUE
-#        additivity: FALSE
-#        level: ERROR
-#        AppenderRef:
-#          - ref: Console_Appender
-#          - ref: RollingFile_Appender
-#      # for request/response filter
-#      - name: org.springframework.web.filter
-#        includeLocation: TRUE
-#        additivity: FALSE
-#        level: DEBUG
-#        AppenderRef:
-#          - ref: Console_Appender
-#          - ref: RollingFile_Appender
-#
-#      - name: org.hibernate
-#        includeLocation: TRUE
-#        additivity: FALSE
-#        level: ERROR
-#        AppenderRef:
-#          - ref: RollingDBFile_Appender
-#      - name: org.hibernate.SQL
-#        includeLocation: TRUE
-#        additivity: FALSE
-#        level: DEBUG
-#        AppenderRef:
-#          - ref: RollingDBFile_Appender
-#
-#      # log4jdbc
-#      - name: jdbc
-#        includeLocation: TRUE
-#        level: TRACE
-#        AppenderRef:
-#          - ref: RollingDBFile_Appender
-#      # for connection "open" or "close"
-#      - name: jdbc.connection
-#        includeLocation: TRUE
-#        level: ERROR
-#        AppenderRef:
-#          - ref: RollingDBFile_Appender
-#      # for sql
-#      - name: jdbc.sqlonly
-#        includeLocation: TRUE
-#        level: DEBUG
-#        AppenderRef:
-#          - ref: RollingDBFile_Appender
-#      # for query time(ms)
-#      - name: jdbc.sqltiming
-#        includeLocation: TRUE
-#        level: ERROR
-#        AppenderRef:
-#          - ref: RollingDBFile_Appender
-#      # alls except for resultset
-#      - name: jdbc.audit
-#        includeLocation: TRUE
-#        level: ERROR
-#        AppenderRef:
-#          - ref: RollingDBFile_Appender
-#      # with resultset
-#      - name: jdbc.resultset
-#        includeLocation: TRUE
-#        level: ERROR
-#        AppenderRef:
-#          - ref: RollingDBFile_Appender
-#      # with resultset table
-#      - name: jdbc.resultsettable
-#        includeLocation: TRUE
-#        level: DEBUG
-#        AppenderRef:
-#          - ref: RollingDBFile_Appender
-#      # hikari
-#      - name: com.zaxxer.hikari.HikariDataSource
-#        includeLocation: TRUE
-#        level: ERROR
-#        AppenderRef:
-#          - ref: RollingDBFile_Appender
-#
-#      - name: net.sf.log4jdbc.log.log4j2.Log4j2SpyLogDelegator
-#        includeLocation: TRUE
-#        additivity: FALSE
-#        level: TRACE
-#        AppenderRef:
-#          - ref: RollingDBFile_Appender
+    #        - ref: RollingDBFile_Appender
+    AsyncLogger:
+      # package
+      - name: log.munzi
+        includeLocation: TRUE
+        additivity: FALSE
+        level: DEBUG
+        AppenderRef:
+          - ref: Console_Appender
+          - ref: RollingFile_Appender
+
+      - name: org.springframework.web
+        includeLocation: TRUE
+        additivity: FALSE
+        level: ERROR
+        AppenderRef:
+          - ref: Console_Appender
+          - ref: RollingFile_Appender
+      # for request/response filter
+      - name: org.springframework.web.filter
+        includeLocation: TRUE
+        additivity: FALSE
+        level: DEBUG
+        AppenderRef:
+          - ref: Console_Appender
+          - ref: RollingFile_Appender
+
+      - name: org.hibernate
+        includeLocation: TRUE
+        additivity: FALSE
+        level: ERROR
+        AppenderRef:
+          - ref: RollingDBFile_Appender
+      - name: org.hibernate.SQL
+        includeLocation: TRUE
+        additivity: FALSE
+        level: DEBUG
+        AppenderRef:
+          - ref: RollingDBFile_Appender
+
+      - name: log4jdbc.log4j2
+        includeLocation: TRUE
+        additivity: FALSE
+        level: DEBUG
+        AppenderRef:
+          - ref: Console_Appender
+          - ref: RollingFile_Appender
+          - ref: RollingDBFile_Appender
+        MarkerFilter:
+#          - marker: LOG4JDBC_JDBC # jdbc
+#            onMatch: DENY
+#            onMismatch: NEUTRAL
+#          - marker: LOG4JDBC_CONNECTION # jdbc.connection
+#            onMatch: DENY
+#            onMismatch: DENY
+#          - marker: LOG4JDBC_NON_STATEMENT # jdbc.sqltiming
+#            onMatch: ACCEPT
+#            onMismatch: DENY
+#          - marker: LOG4JDBC_SQL
+#            onMatch: DENY
+#            onMismatch: DENY
+#          - marker: LOG4JDBC_AUDIT # jdbc.audit
+#            onMatch: DENY
+#            onMismatch: DENY
+#          - marker: LOG4JDBC_RESULTSET # jdbc.resultset
+#            onMatch: DENY
+#            onMismatch: DENY
+          - marker: LOG4JDBC_RESULTSETTABLE # jdbc.resultsettable
+            onMatch: ACCEPT
+            onMismatch: ACCEPT
