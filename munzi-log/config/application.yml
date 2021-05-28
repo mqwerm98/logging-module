@@ -1,61 +1,3 @@
-## ---------- personal custom setting
-#custom:
-#  logging:
-#    path: /apps/logs/munzi-log
-#    filename: a.log
-#    level:
-#      default: INFO
-##    format: "%clr(%-5level) %clr(%date){cyan} %clr(%thread){yellow} %clr([%logger{36}.%M:%line]){blue} %msg%n"
-#    format: "%highlight{[%-5p]}{FATAL=bg_red, ERROR=red, INFO=green, DEBUG=blue} %style{%d{yyyy/MM/dd HH:mm:ss,SSS}}{cyan} [%C] %style{[%t]}{yellow}- %m%n"
-
-## ---------- logging
-##logging.config: classpath:logback-${spring.profiles.active}.xml
-#logging:
-#  # level
-#  level:
-#    # default
-#    root: ${custom.logging.level.default}
-#    # packages
-#    com.withwiz: INFO
-#    com.withwiz.cryptocurrency: INFO
-#    # spring
-#    org.springframework.web: ERROR
-#    # hibernate
-#    org.hibernate: ERROR
-#    org.hibernate.SQL: DEBUG
-#    #org.hibernate.type.descriptor.sql.BasicBinder=TRACE
-#    # log4jdbc
-#    jdbc: OFF
-#    # for connection "open" or "close"
-#    jdbc.connection: ERROR
-#    # for sql
-#    jdbc.sqlonly: DEBUG
-#    # for query time(milliseconds)
-#    jdbc.sqltiming: OFF
-#    # alls except for resultset
-#    jdbc.audit: OFF
-#    # with resultset
-#    jdbc.resultset: OFF
-#    # with resultset table
-#    jdbc.resultsettable: DEBUG
-#    # hikari
-#    com.zaxxer.hikari.HikariDataSource: ERROR
-#    # howtodoinjava
-#    com.howtodoinjav: INFO
-#  file:
-#    # log file full path
-#    name: ${custom.logging.path}/${custom.logging.filename}
-#    # max history(days)
-#    max-history: 30
-#    # max size per file
-#    max-size: 500MB
-#  # log formatter
-#  pattern:
-#    console: ${custom.logging.format}
-#    file: ${custom.logging.format}
-
-
-#default setting
 app:
   name: munzi-log
   version: 1.0.0
@@ -91,15 +33,35 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
       naming:
         implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     properties:
       hibernate:
-        show_sql: true
-        format_sql: true
+        show_sql: false
+        format_sql: false
         default_batch_fetch_size: 100
+
+custom:
+  log-filter:
+    use: true
+    request:
+      max-body-size: 10KB
+      encrypt: # 해당 컬럼은 로그에 암호화해서 찍도록 설정
+        columns: password
+      exclude: # 해당 컬럼은 로그에 안찍도록 설정
+        columns: password2
+      secret: # 해당 컬럼이 포함된 경우, body 전체를 로그에 안찍음
+        columns: secret
+    response:
+      max-body-size: 30KB
+      encrypt: # 해당 컬럼은 로그에 암호화해서 찍도록 설정
+        columns: phone
+      exclude: # 해당 컬럼은 로그에 안찍도록 설정
+        columns: email
+      secret: # 해당 컬럼이 포함된 경우, body 전체를 로그에 안찍음
+        columns: secret
 
 ---
 

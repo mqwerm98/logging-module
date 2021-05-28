@@ -77,13 +77,13 @@ Configuration:
           - ref: Console_Appender
           - ref: RollingFile_Appender
       # for request/response filter
-      - name: org.springframework.web.filter
-        includeLocation: TRUE
-        additivity: FALSE
-        level: DEBUG
-        AppenderRef:
-          - ref: Console_Appender
-          - ref: RollingFile_Appender
+#      - name: org.springframework.web.filter
+#        includeLocation: TRUE
+#        additivity: FALSE
+#        level: DEBUG
+#        AppenderRef:
+#          - ref: Console_Appender
+#          - ref: RollingFile_Appender
 
       - name: org.hibernate
         includeLocation: TRUE
@@ -91,12 +91,12 @@ Configuration:
         level: ERROR
         AppenderRef:
           - ref: RollingDBFile_Appender
-      - name: org.hibernate.SQL
-        includeLocation: TRUE
-        additivity: FALSE
-        level: DEBUG
-        AppenderRef:
-          - ref: RollingDBFile_Appender
+#      - name: org.hibernate.SQL
+#        includeLocation: TRUE
+#        additivity: FALSE
+#        level: DEBUG
+#        AppenderRef:
+#          - ref: RollingDBFile_Appender
 
       - name: log4jdbc.log4j2
         includeLocation: TRUE
