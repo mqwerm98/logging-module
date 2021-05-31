@@ -11,6 +11,8 @@ import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormat;
 import java.util.Enumeration;
 import java.util.stream.Collectors;
 
@@ -32,6 +34,9 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     @Value("${custom.log-filter.response.secret.columns}")
     private String resSecretColumns;
+
+    @Value("${custom.log-filter.response.max-body-size}")
+    private String resMaxSize;
 
     private String requestHeaders = null;
 
@@ -68,7 +73,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
             String body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator())).replaceAll("\\s", "");
             if (body.length() == 0) body = "";
-            log.debug("REQUEST [{} {}], headers=[{}], params=[{}], body=\"{}\"", request.getMethod(), request.getRequestURI(), headers, params, body);
+            log.info("REQUEST [{} {}], headers=[{}], params=[{}], body=\"{}\"", request.getMethod(), request.getRequestURI(), headers, params, body);
         }
 
         return HandlerInterceptor.super.preHandle(request, response, handler);
@@ -82,7 +87,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
 //            log.debug("excludeColumns : {}", resExcludeColumns);
 //            log.debug("secretColumns : {}", resSecretColumns);
 //        }
-
+//
         String payload = "";
         String contentType = cachingResponse.getContentType();
         if (contentType != null) {
@@ -91,13 +96,47 @@ public class LoggingInterceptor implements HandlerInterceptor {
             } else if (contentType.contains("text/plain")) {
                 payload = new String(cachingResponse.getContentAsByteArray());
             } else if (contentType.contains("multipart/form-data")) {
-
+                payload = "[multipart/form-data]";
             }
 
-            log.debug("RESPONSE [{} {}], headers=[{}], payload=\"{}\"", request.getMethod(), request.getRequestURI(), requestHeaders, payload);
+            int payloadSize = payload.getBytes(StandardCharsets.UTF_8).length;
+            if (resMaxSize.isEmpty()) resMaxSize = "1KB";
+            if (payloadSize > textSizeToByteSize(resMaxSize)) {
+                payload = "[" + byteCalculation(payloadSize) + "]";
+            }
 
-            HandlerInterceptor.super.postHandle(request, response, handler, modelAndView);
         }
+        log.info("RESPONSE [{} {}], headers=[{}], payload=\"{}\"", request.getMethod(), request.getRequestURI(), requestHeaders, payload);
+
+
+
+        HandlerInterceptor.super.postHandle(request, response, handler, modelAndView);
+    }
+
+
+    private String byteCalculation(int bytes) {
+        String[] sArray = {"bytes", "KB", "MB", "GB", "TB", "PB"};
+
+        if (bytes == 0) return "0 bytes";
+
+        int idx = (int) Math.floor(Math.log(bytes) / Math.log(1024));
+        DecimalFormat df = new DecimalFormat("#,###.##");
+        double ret = ((bytes / Math.pow(1024, Math.floor(idx))));
+
+        return df.format(ret) + " " + sArray[idx];
+    }
+
+    private double textSizeToByteSize(String size) {
+        String[] sArray = {"BYTES", "KB", "MB", "GB", "TB", "PB"};
+        size = size.toUpperCase();
+        for (int i = 0; i < sArray.length; i++) {
+            if (size.contains(sArray[i])) {
+                String sizeNumber = size.replaceAll(" ", "").replaceAll(sArray[i], "");
+                return Double.parseDouble(sizeNumber) * Math.pow(1024, i);
+            }
+        }
+
+        return 0;
     }
 
 }

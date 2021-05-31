@@ -47,7 +47,7 @@ custom:
   log-filter:
     use: true
     request:
-      max-body-size: 10KB
+      max-body-size: 1KB
       encrypt: # 해당 컬럼은 로그에 암호화해서 찍도록 설정
         columns: password
       exclude: # 해당 컬럼은 로그에 안찍도록 설정
@@ -55,7 +55,7 @@ custom:
       secret: # 해당 컬럼이 포함된 경우, body 전체를 로그에 안찍음
         columns: secret
     response:
-      max-body-size: 30KB
+      max-body-size: 1KB
       encrypt: # 해당 컬럼은 로그에 암호화해서 찍도록 설정
         columns: phone
       exclude: # 해당 컬럼은 로그에 안찍도록 설정
