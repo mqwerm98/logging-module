@@ -45,23 +45,15 @@ spring:
 
 custom:
   log-filter:
-    use: true
+    use: false
     request:
       max-body-size: 1KB
-      encrypt: # 해당 컬럼은 로그에 암호화해서 찍도록 설정
-        columns: password
-      exclude: # 해당 컬럼은 로그에 안찍도록 설정
-        columns: password2
-      secret: # 해당 컬럼이 포함된 경우, body 전체를 로그에 안찍음
-        columns: secret
+      secret: # 해당 api의 경우, body 전체를 로그에 안찍음
+        api: POST /hello/secret
     response:
       max-body-size: 1KB
-      encrypt: # 해당 컬럼은 로그에 암호화해서 찍도록 설정
-        columns: phone
-      exclude: # 해당 컬럼은 로그에 안찍도록 설정
-        columns: email
-      secret: # 해당 컬럼이 포함된 경우, body 전체를 로그에 안찍음
-        columns: secret
+      secret: # 해당 api의 경우, body 전체를 로그에 안찍음
+        api: GET /hello/secret
 
 ---
 

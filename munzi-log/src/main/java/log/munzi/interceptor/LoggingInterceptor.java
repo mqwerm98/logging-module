@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -26,27 +27,26 @@ public class LoggingInterceptor implements HandlerInterceptor {
     @Value("${custom.log-filter.use}")
     private boolean logFilterUseYn;
 
-    @Value("${custom.log-filter.response.encrypt.columns}")
-    private String resEncryptColumns;
+    @Value("${custom.log-filter.request.secret.api}")
+    private List<String> reqSecretApiList;
 
-    @Value("${custom.log-filter.response.exclude.columns}")
-    private String resExcludeColumns;
-
-    @Value("${custom.log-filter.response.secret.columns}")
-    private String resSecretColumns;
+    @Value("${custom.log-filter.response.secret.api}")
+    private List<String> resSecretApiList;
 
     @Value("${custom.log-filter.response.max-body-size}")
     private String resMaxSize;
 
-    private String requestHeaders = null;
+    private String requestHeaders;
+    private String requestMethodUri;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         if (!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper")) {
 
+            requestMethodUri = request.getMethod() + " " + request.getRequestURI();
             StringBuilder headers = new StringBuilder();
             Enumeration<String> headerNames = request.getHeaderNames();
-            String headerName = null;
+            String headerName;
             while (headerNames.hasMoreElements()) {
                 headerName = headerNames.nextElement();
                 headers.append(headerName);
@@ -60,7 +60,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
             StringBuilder params = new StringBuilder();
             Enumeration<String> paramNames = request.getParameterNames();
-            String paramName = null;
+            String paramName;
             while (paramNames.hasMoreElements()) {
                 paramName = paramNames.nextElement();
                 params.append(paramName);
@@ -72,8 +72,13 @@ public class LoggingInterceptor implements HandlerInterceptor {
             if (paramLength >= 2) params.delete(paramLength - 2, paramLength);
 
             String body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator())).replaceAll("\\s", "");
-            if (body.length() == 0) body = "";
-            log.info("REQUEST [{} {}], headers=[{}], params=[{}], body=\"{}\"", request.getMethod(), request.getRequestURI(), headers, params, body);
+            if (reqSecretApiList.contains(requestMethodUri)) {
+                body = "[secret! " + byteCalculation(body.getBytes(StandardCharsets.UTF_8).length) + "]";
+            } else if (body.length() == 0) {
+                body = "";
+            }
+
+            log.info("REQUEST [{}], headers=[{}], params=[{}], body=\"{}\"", requestMethodUri, headers, params, body);
         }
 
         return HandlerInterceptor.super.preHandle(request, response, handler);
@@ -82,12 +87,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
         final ContentCachingResponseWrapper cachingResponse = (ContentCachingResponseWrapper) response;
-//        if (logFilterUseYn) {
-//            log.debug("encryptColumns : {}", resEncryptColumns);
-//            log.debug("excludeColumns : {}", resExcludeColumns);
-//            log.debug("secretColumns : {}", resSecretColumns);
-//        }
-//
+
         String payload = "";
         String contentType = cachingResponse.getContentType();
         if (contentType != null) {
@@ -99,16 +99,23 @@ public class LoggingInterceptor implements HandlerInterceptor {
                 payload = "[multipart/form-data]";
             }
 
-            int payloadSize = payload.getBytes(StandardCharsets.UTF_8).length;
-            if (resMaxSize.isEmpty()) resMaxSize = "1KB";
-            if (payloadSize > textSizeToByteSize(resMaxSize)) {
-                payload = "[" + byteCalculation(payloadSize) + "]";
+            if (logFilterUseYn) {
+                int payloadSize = payload.getBytes(StandardCharsets.UTF_8).length;
+                String payloadTextSize = byteCalculation(payloadSize);
+
+                if (resSecretApiList.contains(requestMethodUri)) {
+                    payload = "[secret! " + payloadTextSize + "]";
+                } else {
+                    if (resMaxSize.isEmpty()) resMaxSize = "1KB";
+                    if (payloadSize > textSizeToByteSize(resMaxSize)) {
+                        payload = "[" + payloadTextSize + "]";
+                    }
+                }
             }
 
         }
-        log.info("RESPONSE [{} {}], headers=[{}], payload=\"{}\"", request.getMethod(), request.getRequestURI(), requestHeaders, payload);
 
-
+        log.info("RESPONSE [{}], headers=[{}], payload=\"{}\"", requestMethodUri, requestHeaders, payload);
 
         HandlerInterceptor.super.postHandle(request, response, handler, modelAndView);
     }

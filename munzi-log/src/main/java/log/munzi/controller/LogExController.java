@@ -40,4 +40,20 @@ public class LogExController {
         munziService.createMunzi(request.getName());
         return new ResHello(request.getName());
     }
+
+    @GetMapping("/secret")
+    @ResponseStatus(HttpStatus.OK)
+    public String helloSecret() {
+        return munziService.getNames();
+    }
+
+    @PostMapping("/secret")
+    @ResponseStatus(HttpStatus.OK)
+    public ResHello helloPostSecret(@RequestBody @Validated ReqHello request) {
+
+        log.debug("name : {}", request.getName());
+
+        munziService.createMunzi(request.getName());
+        return new ResHello(request.getName());
+    }
 }
