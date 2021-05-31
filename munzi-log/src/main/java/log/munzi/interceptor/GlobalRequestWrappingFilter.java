@@ -26,12 +26,12 @@ public class GlobalRequestWrappingFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-        HttpServletRequest wrapperRequest = new ReadableRequestWrapper((HttpServletRequest) request);
+        HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request);
         ContentCachingResponseWrapper wrappingResponse = new ContentCachingResponseWrapper((HttpServletResponse) response);
 
-        chain.doFilter(wrapperRequest, wrappingResponse);
+        chain.doFilter(wrappingRequest, wrappingResponse);
 
-        wrappingResponse.copyBodyToResponse(); //body값을 copy해 캐시로 저장
+        wrappingResponse.copyBodyToResponse(); // 캐시를 copy해 return될 response body에 저장
     }
 
 }

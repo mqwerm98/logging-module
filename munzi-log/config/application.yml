@@ -45,13 +45,13 @@ spring:
 
 custom:
   log-filter:
-    use: false
+    use: true # filter 전체 사용 여부
     request:
-      max-body-size: 1KB
+      max-body-size: 1KB # request body max size
       secret: # 해당 api의 경우, body 전체를 로그에 안찍음
         api: POST /hello/secret
     response:
-      max-body-size: 1KB
+      max-body-size: 1bytes # response body max size
       secret: # 해당 api의 경우, body 전체를 로그에 안찍음
         api: GET /hello/secret
 
