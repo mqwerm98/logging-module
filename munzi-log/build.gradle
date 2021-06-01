@@ -3,12 +3,15 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 plugins {
-    id 'org.springframework.boot' version '2.4.5'
+    id 'org.springframework.boot' version '2.4.2'
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
     id 'maven'
     id 'maven-publish'
 }
+
+bootJar.enabled = true
+jar.enabled = true
 
 ext {
     set('snippetsDir', file("build/generated-snippets"))
@@ -67,6 +70,21 @@ bootJar {
     archiveName = project.properties["app.name"] + '-' + project.properties["app.version"] + "sb.${extension}"
 }
 
+apply plugin: 'maven'
+project.group = 'log.munzi'
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: 'http://localhost:8081/repository/maven-release/') {
+                authentication(userName: project.nexusUsername, password: project.nexusPassword)
+            }
+            snapshotRepository(url: 'http://localhost:8081/repository/maven-snapshots/') {
+                authentication(userName: project.nexusUsername, password: project.nexusPassword)
+            }
+        }
+    }
+}
+
 configurations {
     developmentOnly
     runtimeClasspath {
@@ -89,20 +107,9 @@ repositories {
 }
 
 dependencies {
-//    implementation group: 'org.slf4j', name: 'slf4j-api', version: "${version_slf4j}"
-//    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: log4j2Version
-//    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: log4j2Version
-
-//    compile group: 'org.slf4j', name: 'jcl-over-slf4j', version: "${version_slf4j}"
-//    compile group: 'org.slf4j', name: 'log4j-over-slf4j', version: "${version_slf4j}"
-//    compile group: 'org.slf4j', name: 'jul-to-slf4j', version: "${version_slf4j}"
-
-//    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
-    runtimeOnly 'com.h2database:h2'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 

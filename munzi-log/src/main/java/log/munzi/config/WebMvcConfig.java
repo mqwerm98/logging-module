@@ -15,7 +15,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loggingInterceptor)
-                .addPathPatterns("/hello/**")
+                .addPathPatterns("/**")
                 .excludePathPatterns("/vendor/**", "/css/*", "/img/*");
 
     }
