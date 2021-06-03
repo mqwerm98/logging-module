@@ -5,6 +5,8 @@ Configuration:
 
   Properties:
     Property:
+      - name: package-name
+        value: "log.munzi"
       - name: log-path
         value: "/apps/logs/munzi-log"
       - name: log-filename
@@ -61,7 +63,7 @@ Configuration:
     #        - ref: RollingDBFile_Appender
     AsyncLogger:
       # package
-      - name: log.munzi
+      - name: ${package-name}
         includeLocation: TRUE
         additivity: FALSE
         level: DEBUG
@@ -76,14 +78,6 @@ Configuration:
         AppenderRef:
           - ref: Console_Appender
           - ref: RollingFile_Appender
-      # for request/response filter
-#      - name: org.springframework.web.filter
-#        includeLocation: TRUE
-#        additivity: FALSE
-#        level: DEBUG
-#        AppenderRef:
-#          - ref: Console_Appender
-#          - ref: RollingFile_Appender
 
       - name: org.hibernate
         includeLocation: TRUE

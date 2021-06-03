@@ -27,6 +27,9 @@ public class LoggingInterceptor implements HandlerInterceptor {
     @Value("${custom.log-filter.use}")
     private boolean logFilterUseYn;
 
+    @Value("${custom.ignore-security-log}")
+    private boolean ignoreSecurityLog = false;
+
     @Value("${custom.log-filter.request.secret.api}")
     private List<String> reqSecretApiList;
 
@@ -41,8 +44,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        if (!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper")) {
-
+        if (!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || ignoreSecurityLog) {
             requestMethodUri = request.getMethod() + " " + request.getRequestURI();
             StringBuilder headers = new StringBuilder();
             Enumeration<String> headerNames = request.getHeaderNames();
@@ -86,41 +88,48 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
-        final ContentCachingResponseWrapper cachingResponse = (ContentCachingResponseWrapper) response;
+        if (!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || ignoreSecurityLog) {
+            final ContentCachingResponseWrapper cachingResponse = (ContentCachingResponseWrapper) response;
 
-        String payload = "";
-        String contentType = cachingResponse.getContentType();
-        if (contentType != null) {
-            if (contentType.contains("application/json") && cachingResponse.getContentAsByteArray().length != 0) {
-                payload = objectMapper.readTree(cachingResponse.getContentAsByteArray()).toString();
-            } else if (contentType.contains("text/plain")) {
-                payload = new String(cachingResponse.getContentAsByteArray());
-            } else if (contentType.contains("multipart/form-data")) {
-                payload = "[multipart/form-data]";
-            }
+            String payload = "";
+            String contentType = cachingResponse.getContentType();
+            if (contentType != null) {
+                if (contentType.contains("application/json") && cachingResponse.getContentAsByteArray().length != 0) {
+                    payload = objectMapper.readTree(cachingResponse.getContentAsByteArray()).toString();
+                } else if (contentType.contains("text/plain")) {
+                    payload = new String(cachingResponse.getContentAsByteArray());
+                } else if (contentType.contains("multipart/form-data")) {
+                    payload = "[multipart/form-data]";
+                }
 
-            if (logFilterUseYn) {
-                int payloadSize = payload.getBytes(StandardCharsets.UTF_8).length;
-                String payloadTextSize = byteCalculation(payloadSize);
+                if (logFilterUseYn) {
+                    int payloadSize = payload.getBytes(StandardCharsets.UTF_8).length;
+                    String payloadTextSize = byteCalculation(payloadSize);
 
-                if (resSecretApiList.contains(requestMethodUri)) {
-                    payload = "[secret! " + payloadTextSize + "]";
-                } else {
-                    if (resMaxSize.isEmpty()) resMaxSize = "1KB";
-                    if (payloadSize > textSizeToByteSize(resMaxSize)) {
-                        payload = "[" + payloadTextSize + "]";
+                    if (resSecretApiList.contains(requestMethodUri)) {
+                        payload = "[secret! " + payloadTextSize + "]";
+                    } else {
+                        if (resMaxSize.isEmpty()) resMaxSize = "1KB";
+                        if (payloadSize > textSizeToByteSize(resMaxSize)) {
+                            payload = "[" + payloadTextSize + "]";
+                        }
                     }
                 }
             }
 
+            log.info("RESPONSE [{}], headers=[{}], payload=\"{}\"", requestMethodUri, requestHeaders, payload);
         }
-
-        log.info("RESPONSE [{}], headers=[{}], payload=\"{}\"", requestMethodUri, requestHeaders, payload);
 
         HandlerInterceptor.super.postHandle(request, response, handler, modelAndView);
     }
 
 
+    /**
+     * bytes 단위의 숫자를 KB, MB 단위의 문자열로 변환
+     * ex) 2048 -> 2 KB
+     * @param bytes
+     * @return KB, MB 단위로 변환된 문자열
+     */
     private String byteCalculation(int bytes) {
         String[] sArray = {"bytes", "KB", "MB", "GB", "TB", "PB"};
 
@@ -133,6 +142,11 @@ public class LoggingInterceptor implements HandlerInterceptor {
         return df.format(ret) + " " + sArray[idx];
     }
 
+    /**
+     * KB, MB 등의 단위로 표현된 문자열을 byte 로 변환
+     * @param size
+     * @return byte 단위로 변환된 값
+     */
     private double textSizeToByteSize(String size) {
         String[] sArray = {"BYTES", "KB", "MB", "GB", "TB", "PB"};
         size = size.toUpperCase();
