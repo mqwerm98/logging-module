@@ -5,6 +5,8 @@ Configuration:
 
   Properties:
     Property:
+      - name: package-name
+        value: "log.munzi"
       - name: log-path
         value: "/apps/logs/munzi-log"
       - name: log-filename
@@ -61,7 +63,7 @@ Configuration:
     #        - ref: RollingDBFile_Appender
     AsyncLogger:
       # package
-      - name: log.munzi
+      - name: ${package-name}
         includeLocation: TRUE
         additivity: FALSE
         level: DEBUG

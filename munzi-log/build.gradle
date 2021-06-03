@@ -10,12 +10,10 @@ plugins {
     id 'maven-publish'
 }
 
-bootJar.enabled = true
+bootJar.enabled = false
 jar.enabled = true
 
 ext {
-    set('snippetsDir', file("build/generated-snippets"))
-
     version_project = project.properties["app.version"]
 
     version_slf4j = '1.7.30'
@@ -29,19 +27,10 @@ ext {
 
     version_jackson = '2.11.0'
 
-    version_kafka = '2.4.1.RELEASE'
-
     version_modelmapper = '2.3.0'
     version_validation = '2.3.7.RELEASE'
     version_junit = '5.2.0'
 
-    version_aop = '2.4.5'
-
-    version_swagger = '2.9.2'
-
-    version_jetty = '1.5.7.RELEASE'
-
-    version_log4jdbc = '1.16'
     version_log4jweb = '2.14.1'
     version_disruptor = '3.4.4'
 
@@ -67,18 +56,17 @@ springBoot {
 }
 
 bootJar {
-    archiveName = project.properties["app.name"] + '-' + project.properties["app.version"] + "sb.${extension}"
+//    archiveName = project.properties["app.name"] + '-' + project.properties["app.version"] + "sb.${extension}"
 }
 
 apply plugin: 'maven'
-project.group = 'log.munzi'
 uploadArchives {
     repositories {
         mavenDeployer {
-            repository(url: 'http://localhost:8081/repository/maven-release/') {
+            repository(url: project.nexusReleaseUrl) {
                 authentication(userName: project.nexusUsername, password: project.nexusPassword)
             }
-            snapshotRepository(url: 'http://localhost:8081/repository/maven-snapshots/') {
+            snapshotRepository(url: project.nexusSnapshotUrl) {
                 authentication(userName: project.nexusUsername, password: project.nexusPassword)
             }
         }
@@ -93,7 +81,6 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
-    compile.exclude module: "spring-boot-starter-tomcat"
 
     all {
         // log4j2를 사용하기 위해, spring의 default인 logback을 제외
@@ -113,11 +100,8 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
-    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-jetty', version: "${version_jetty}"
     annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
-    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-aop', version: "${version_aop}"
 
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-validation', version: "${version_validation}"
 
     // log4j2
     compile 'org.springframework.boot:spring-boot-starter-log4j2'

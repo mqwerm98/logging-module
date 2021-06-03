@@ -44,6 +44,7 @@ spring:
 #        default_batch_fetch_size: 100
 
 custom:
+  ignore-security-log: true # default = false, true일 경우에만 security여도 로그 찍음
   log-filter:
     use: true # filter 전체 사용 여부
     request:
