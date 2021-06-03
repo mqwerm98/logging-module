@@ -10,6 +10,9 @@ plugins {
     id 'maven-publish'
 }
 
+bootJar.enabled = true
+jar.enabled = true
+
 ext {
     set('snippetsDir', file("build/generated-snippets"))
 
