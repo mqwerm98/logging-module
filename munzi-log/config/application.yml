@@ -52,7 +52,7 @@ custom:
       secret: # 해당 api의 경우, body 전체를 로그에 안찍음
         api: POST /hello/secret, GET /hello/secret
     response:
-      max-body-size: 18 bytes # response body max size
+      max-body-size: 1 KB # response body max size
       secret: # 해당 api의 경우, body 전체를 로그에 안찍음
         api: POST /hello/secret, GET /hello/secret
 

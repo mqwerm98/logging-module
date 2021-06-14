@@ -6,8 +6,10 @@ import log.munzi.service.MunziService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @RestController
@@ -31,14 +33,15 @@ public class LogExController {
         return munziService.getNames();
     }
 
-    @PostMapping("")
+    @PostMapping(value = "", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.OK)
-    public ResHello helloPost(@RequestBody @Validated ReqHello request) {
+    public ResHello helloPost(@RequestParam @Validated String name,
+                              @RequestParam(value = "file") MultipartFile file) {
 
-        log.debug("name : {}", request.getName());
+        log.debug("name : {}, fileSize : {}", name, file.getSize());
 
-        munziService.createMunzi(request.getName());
-        return new ResHello(request.getName());
+        munziService.createMunzi(name);
+        return new ResHello(name);
     }
 
     @GetMapping("/secret")
@@ -54,6 +57,13 @@ public class LogExController {
         log.debug("name : {}", request.getName());
 
         munziService.createMunzi(request.getName());
+        return new ResHello(request.getName());
+    }
+
+    @PostMapping("/no-secret")
+    @ResponseStatus(HttpStatus.OK)
+    public ResHello helloPostNoSecret(@RequestBody @Validated ReqHello request) {
+
         return new ResHello(request.getName());
     }
 }
