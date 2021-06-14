@@ -63,11 +63,11 @@ apply plugin: 'maven'
 uploadArchives {
     repositories {
         mavenDeployer {
-            repository(url: project.nexusReleaseUrl) {
-                authentication(userName: project.nexusUsername, password: project.nexusPassword)
+            repository(url: project.properties["nexus.dkargo.url.release"]) {
+                authentication(userName: project.properties["nexus.dkargo.username"], password: project.properties["nexus.dkargo.password"])
             }
-            snapshotRepository(url: project.nexusSnapshotUrl) {
-                authentication(userName: project.nexusUsername, password: project.nexusPassword)
+            snapshotRepository(url: project.properties["nexus.dkargo.url.snapshot"]) {
+                authentication(userName: project.properties["nexus.dkargo.username"], password: project.properties["nexus.dkargo.password"])
             }
         }
     }
@@ -90,10 +90,10 @@ configurations {
 
 repositories {
     mavenCentral()
-    jcenter()
 }
 
 dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'

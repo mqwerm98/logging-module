@@ -36,6 +36,9 @@ public class LoggingInterceptor implements HandlerInterceptor {
     @Value("${custom.log-filter.response.secret.api}")
     private List<String> resSecretApiList;
 
+    @Value("${custom.log-filter.request.max-body-size}")
+    private String reqMaxSize;
+
     @Value("${custom.log-filter.response.max-body-size}")
     private String resMaxSize;
 
@@ -51,8 +54,9 @@ public class LoggingInterceptor implements HandlerInterceptor {
             String headerName;
             while (headerNames.hasMoreElements()) {
                 headerName = headerNames.nextElement();
+                headers.append("\"");
                 headers.append(headerName);
-                headers.append(":\"");
+                headers.append("\":\"");
                 headers.append(request.getHeader(headerName));
                 headers.append("\", ");
             }
@@ -65,22 +69,37 @@ public class LoggingInterceptor implements HandlerInterceptor {
             String paramName;
             while (paramNames.hasMoreElements()) {
                 paramName = paramNames.nextElement();
+                params.append("\"");
                 params.append(paramName);
-                params.append(":\"");
+                params.append("\":\"");
                 params.append(request.getParameter(paramName));
                 params.append("\", ");
             }
             int paramLength = params.length();
             if (paramLength >= 2) params.delete(paramLength - 2, paramLength);
 
-            String body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator())).replaceAll("\\s", "");
-            if (reqSecretApiList.contains(requestMethodUri)) {
-                body = "[secret! " + byteCalculation(body.getBytes(StandardCharsets.UTF_8).length) + "]";
-            } else if (body.length() == 0) {
+            String body = null;
+            String contentType = request.getHeader("Content-Type");
+
+            if (contentType == null) {
                 body = "";
+            } else {
+                int contentLength = Integer.parseInt(request.getHeader("Content-Length"));
+                if (contentType.contains("multipart/form-data")) {
+                    body = "[multipart/form-data]";
+                } else if (reqSecretApiList.contains(requestMethodUri)) {
+                    body = "[secret! " + byteCalculation(contentLength) + "]";
+                } else {
+                    if (reqMaxSize.isEmpty()) reqMaxSize = "1KB";
+                    if (contentLength > textSizeToByteSize(reqMaxSize)) {
+                        body = "[" + byteCalculation(contentLength) + "]";
+                    } else {
+                        body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator())).replaceAll("\\s", "");
+                    }
+                }
             }
 
-            log.info("REQUEST [{}], headers=[{}], params=[{}], body=\"{}\"", requestMethodUri, headers, params, body);
+            log.info("REQUEST [{}], headers={{}}, params={{}}, body={}", requestMethodUri, headers, params, body);
         }
 
         return HandlerInterceptor.super.preHandle(request, response, handler);
@@ -115,10 +134,9 @@ public class LoggingInterceptor implements HandlerInterceptor {
                         }
                     }
                 }
-
             }
 
-            log.info("RESPONSE [{}], headers=[{}], payload=\"{}\"", requestMethodUri, requestHeaders, payload);
+            log.info("RESPONSE [{}], headers={{}}, payload={}", requestMethodUri, requestHeaders, payload);
         }
 
         HandlerInterceptor.super.postHandle(request, response, handler, modelAndView);

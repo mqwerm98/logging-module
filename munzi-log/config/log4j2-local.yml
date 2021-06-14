@@ -15,6 +15,8 @@ Configuration:
         value: "munzi-db-log.log"
       - name: log-pattern
         value: "%highlight{[%-5p]}{FATAL=bg_red, ERROR=red, INFO=green, DEBUG=blue} %style{%d{yyyy/MM/dd HH:mm:ss.SSS}}{cyan} %style{%t}{yellow} %style{[%C{1.}.%M:%L]}{blue} %m%n"
+      - name: log-pattern-no-color
+        value: "[%-5p] %d{yyyy/MM/dd HH:mm:ss.SSS} %t [%C{1.}.%M:%L] %m%n"
 
   Appenders:
     Console:
@@ -24,6 +26,21 @@ Configuration:
         pattern: ${log-pattern}
     RollingFile:
       - name: RollingFile_Appender
+        fileName: ${log-path}/${log-filename}
+        filePattern: ${log-path}/archive/${log-filename}.%d{yyyy-MM-dd-hh-mm}.gz
+        PatternLayout:
+          pattern: ${log-pattern-no-color}
+        Policies:
+          SizeBasedTriggeringPolicy:
+            size: 500 MB
+        DefaultRollOverStrategy:
+          max: 30
+          Delete:
+            basePath: ${log-path}/archive
+            maxDepth: 1
+            IfAccumulatedFileCount:
+              exceeds: 31
+      - name: RollingFile_Appender_Color
         fileName: ${log-path}/${log-filename}
         filePattern: ${log-path}/archive/${log-filename}.%d{yyyy-MM-dd-hh-mm}.gz
         PatternLayout:
@@ -78,14 +95,6 @@ Configuration:
         AppenderRef:
           - ref: Console_Appender
           - ref: RollingFile_Appender
-      # for request/response filter
-#      - name: org.springframework.web.filter
-#        includeLocation: TRUE
-#        additivity: FALSE
-#        level: DEBUG
-#        AppenderRef:
-#          - ref: Console_Appender
-#          - ref: RollingFile_Appender
 
       - name: org.hibernate
         includeLocation: TRUE
@@ -107,7 +116,7 @@ Configuration:
         AppenderRef:
           - ref: Console_Appender
           - ref: RollingFile_Appender
-          - ref: RollingDBFile_Appender
+#          - ref: RollingDBFile_Appender
         MarkerFilter:
 #          - marker: LOG4JDBC_JDBC # jdbc
 #            onMatch: DENY
