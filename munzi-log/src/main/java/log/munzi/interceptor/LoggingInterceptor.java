@@ -81,7 +81,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
             String body = null;
             String contentType = request.getHeader("Content-Type");
 
-            if (contentType == null) {
+            if (contentType == null || request.getHeader("Content-Length") == null) {
                 body = "";
             } else {
                 int contentLength = Integer.parseInt(request.getHeader("Content-Length"));
