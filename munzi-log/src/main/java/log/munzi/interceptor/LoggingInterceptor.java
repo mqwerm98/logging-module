@@ -42,7 +42,6 @@ public class LoggingInterceptor implements HandlerInterceptor {
     @Value("${custom.log-filter.response.max-body-size}")
     private String resMaxSize;
 
-    private String requestHeaders;
     private String requestMethodUri;
 
     @Override
@@ -62,7 +61,6 @@ public class LoggingInterceptor implements HandlerInterceptor {
             }
             int headersLength = headers.length();
             if (headersLength >= 2) headers.delete(headersLength - 2, headersLength);
-            requestHeaders = headers.toString();
 
             StringBuilder params = new StringBuilder();
             Enumeration<String> paramNames = request.getParameterNames();
@@ -110,6 +108,20 @@ public class LoggingInterceptor implements HandlerInterceptor {
         if (!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || ignoreSecurityLog) {
             final ContentCachingResponseWrapper cachingResponse = (ContentCachingResponseWrapper) response;
 
+            StringBuilder headers = new StringBuilder();
+            Enumeration<String> headerNames = request.getHeaderNames();
+            String headerName;
+            while (headerNames.hasMoreElements()) {
+                headerName = headerNames.nextElement();
+                headers.append("\"");
+                headers.append(headerName);
+                headers.append("\":\"");
+                headers.append(request.getHeader(headerName));
+                headers.append("\", ");
+            }
+            int headersLength = headers.length();
+            if (headersLength >= 2) headers.delete(headersLength - 2, headersLength);
+
             String payload = "";
             String contentType = cachingResponse.getContentType();
             if (contentType != null) {
@@ -136,7 +148,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
                 }
             }
 
-            log.info("RESPONSE [{}], headers={{}}, payload={}", requestMethodUri, requestHeaders, payload);
+            log.info("RESPONSE [{}], headers={{}}, payload={}", requestMethodUri, headers, payload);
         }
 
         HandlerInterceptor.super.postHandle(request, response, handler, modelAndView);
