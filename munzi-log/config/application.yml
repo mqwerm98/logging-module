@@ -51,10 +51,14 @@ custom:
       max-body-size: 1 KB # request body max size
       secret: # 해당 api의 경우, body 전체를 로그에 안찍음
         api: POST /hello/secret, GET /hello/secret
+      inactive: # 해당 api의 경우, REQUEST 로그 전체를 안찍음
+        api: POST /hello/inactive, GET /hello/inactive
     response:
       max-body-size: 1 KB # response body max size
       secret: # 해당 api의 경우, body 전체를 로그에 안찍음
         api: POST /hello/secret, GET /hello/secret
+      inactive: # 해당 api의 경우, RESPONSE 로그 전체를 안찍음
+        api: POST /hello/inactive, GET /hello/inactive
 
 ---
 
