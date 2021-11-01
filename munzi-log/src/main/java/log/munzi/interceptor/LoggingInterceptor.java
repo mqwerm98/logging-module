@@ -53,7 +53,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         requestMethodUri = request.getMethod() + " " + request.getRequestURI();
-        if (!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || ignoreSecurityLog || reqInactiveApiList.contains(requestMethodUri)) {
+        if ((!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || ignoreSecurityLog) && !reqInactiveApiList.contains(requestMethodUri)) {
             StringBuilder headers = new StringBuilder();
             Enumeration<String> headerNames = request.getHeaderNames();
             String headerName;
@@ -111,7 +111,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
-        if (!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || ignoreSecurityLog || resInactiveApiList.contains(requestMethodUri)) {
+        if ((!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || ignoreSecurityLog) && !resInactiveApiList.contains(requestMethodUri)) {
             final ContentCachingResponseWrapper cachingResponse = (ContentCachingResponseWrapper) response;
 
             StringBuilder headers = new StringBuilder();
