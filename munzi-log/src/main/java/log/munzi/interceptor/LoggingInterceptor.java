@@ -17,6 +17,10 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Interceptor 단계에서 HttpServletRequest, HttpServletResponse 등을 가로채
+ * API의 Request, Response log를 찍어준다.
+ */
 @Slf4j
 @RequiredArgsConstructor
 @Component
@@ -50,6 +54,19 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     private String requestMethodUri;
 
+    /**
+     * Request API log를 찍는 부분.
+     * 설정파일의 secret 여부, 길이 제한 등을 체크해 설정대로 로그를 남긴다.
+     *
+     * Interceptor가 Request 중간에서 가로채서 작업하는 부분이기 때문에,
+     * preHandle 호출 시 필요한 HttpServletRequest, HttpServletResponse, handler를 인자로 받아 사용하고 preHandle 호출에 그대로 사용한다.
+     *
+     * @param request HttpServletRequest
+     * @param response HttpServletResponse
+     * @param handler HttpServletResponse
+     * @return HandlerInterceptor.super.preHandle
+     * @throws Exception request.getReader Exception
+     */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         requestMethodUri = request.getMethod() + " " + request.getRequestURI();
@@ -109,6 +126,19 @@ public class LoggingInterceptor implements HandlerInterceptor {
         return HandlerInterceptor.super.preHandle(request, response, handler);
     }
 
+    /**
+     * Response API log를 찍는 부분
+     * 설정파일의 secret 여부, 길이 제한 등을 체크해 설정대로 로그를 남긴다.
+     *
+     * Interceptor가 Response 중간에서 가로채서 작업하는 부분이기 때문에,
+     * postHandle 호출 시 필요한 HttpServletRequest, HttpServletResponse, handler, ModelAndView를 인자로 받아 사용하고 postHandle 호출에 그대로 사용한다.
+     *
+     * @param request HttpServletRequest
+     * @param response HttpServletResponse
+     * @param handler handler
+     * @param modelAndView ModelAndView
+     * @throws Exception HandlerInterceptor.super.postHandle Exception
+     */
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
         if ((!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || ignoreSecurityLog) && !resInactiveApiList.contains(requestMethodUri)) {
@@ -164,7 +194,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
     /**
      * bytes 단위의 숫자를 KB, MB 단위의 문자열로 변환
      * ex) 2048 -> 2 KB
-     * @param bytes
+     * @param bytes 문자열로 변환할 byte단위 크기
      * @return KB, MB 단위로 변환된 문자열
      */
     private String byteCalculation(int bytes) {
@@ -181,7 +211,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     /**
      * KB, MB 등의 단위로 표현된 문자열을 byte 로 변환
-     * @param size
+     * @param size 문자열로 표기된 크기
      * @return byte 단위로 변환된 값
      */
     private double textSizeToByteSize(String size) {

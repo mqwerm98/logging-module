@@ -12,6 +12,11 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+
+/**
+ * Request Servlet 에 담긴 내용을 열어보면 휘발되기 때문에
+ * request 정보를 휘발되지 않게 한번 감싼 것
+ */
 @Slf4j
 public class ReadableRequestWrapper extends HttpServletRequestWrapper {
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
@@ -21,6 +26,12 @@ public class ReadableRequestWrapper extends HttpServletRequestWrapper {
     private byte[] rawData;
     private boolean read;
 
+
+    /**
+     * @param request HttpServletRequest
+     * @param reqSecretApiList body를 로그에 찍지 않을 api list (ex. POST /api/secret)
+     * @param reqMaxSize request body max size
+     */
     public ReadableRequestWrapper(HttpServletRequest request, List<String> reqSecretApiList, String reqMaxSize) {
         super(request);
         String encoding = request.getCharacterEncoding();
@@ -39,9 +50,6 @@ public class ReadableRequestWrapper extends HttpServletRequestWrapper {
                 this.read = true;
                 this.rawData = toByteArray(is);
             }
-
-            log.debug("readYn : {}", read);
-
         } catch (IOException e) {
             log.error("ReaderRequestWrapper에서 Stream을 열다가 IOException 발생", e);
         }
@@ -107,6 +115,9 @@ public class ReadableRequestWrapper extends HttpServletRequestWrapper {
         return 0;
     }
 
+    /**
+     * @return log에 찍을지 여부
+     */
     public boolean isRead() {
         return this.read;
     }

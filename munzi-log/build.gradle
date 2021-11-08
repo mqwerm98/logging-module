@@ -13,6 +13,10 @@ plugins {
 bootJar.enabled = false
 jar.enabled = true
 
+java {
+    withJavadocJar()
+}
+
 ext {
     version_project = project.properties["app.version"]
 
