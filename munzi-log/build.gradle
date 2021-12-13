@@ -8,40 +8,20 @@ plugins {
     id 'java'
     id 'maven'
     id 'maven-publish'
+    id 'signing'
 }
 
 bootJar.enabled = false
 jar.enabled = true
 
-java {
-    withJavadocJar()
-}
 
-ext {
-    version_project = project.properties["app.version"]
+//plugins {
+//    id 'java'
+//    id 'maven'
+//    id 'signing'
+//}
 
-    version_slf4j = '1.7.30'
-    version_logback = '1.2.3'
-    version_log4jdbc = '1.16'
 
-    version_lombok = '1.18.16'
-
-    version_commons_lang = '3.9'
-    version_commons_codec = '1.14'
-
-    version_jackson = '2.11.0'
-
-    version_modelmapper = '2.3.0'
-    version_validation = '2.3.7.RELEASE'
-    version_junit = '5.2.0'
-
-    version_log4jweb = '2.14.1'
-    version_disruptor = '3.4.4'
-
-    version_java = '1.8'
-    project_build_sourceEncoding = 'UTF-8'
-
-}
 
 group = project.properties["app.group"]
 version = ext.version_project
@@ -59,19 +39,64 @@ springBoot {
     }
 }
 
-bootJar {
-//    archiveName = project.properties["app.name"] + '-' + project.properties["app.version"] + "sb.${extension}"
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+signing {
+    sign configurations.archives
 }
 
 apply plugin: 'maven'
 uploadArchives {
     repositories {
         mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
             repository(url: project.properties["nexus.dkargo.url.release"]) {
                 authentication(userName: project.properties["nexus.dkargo.username"], password: project.properties["nexus.dkargo.password"])
             }
             snapshotRepository(url: project.properties["nexus.dkargo.url.snapshot"]) {
                 authentication(userName: project.properties["nexus.dkargo.username"], password: project.properties["nexus.dkargo.password"])
+            }
+
+            pom.project {
+                name 'Plankton library'
+                packaging 'jar'
+                // optionally artifactId can be defined here
+//                description 'A application used as an example on how to set up pushing  its components to the Central Repository.'
+                url 'https://github.com/mqwerm98/logging-module'
+
+                scm {
+                    connection 'scm:git:git://github.com/mqwerm98/logging-module.git'
+                    developerConnection 'scm:git:git://github.com/mqwerm98/logging-module.git'
+                    url 'scm:git:git://github.com/mqwerm98/logging-module.git'
+                }
+
+                licenses {
+                    license {
+                        name 'The Apache License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'munzi'
+                        name 'munzi'
+                        email 'mqwerm98@naver.com'
+                    }
+                }
             }
         }
     }
