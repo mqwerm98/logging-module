@@ -74,17 +74,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
         requestMethodUri = request.getMethod() + " " + request.getRequestURI();
 
         // inactive api '*' check
-        boolean inactiveYn = false;
-        if (reqInactiveApiList.size() > 0) {
-            for (String api : reqInactiveApiList) {
-                if (api.contains("*")) {
-                    String[] split = api.split("\\*");
-                    if (!split[0].isEmpty() && requestMethodUri.startsWith(split[0])) {
-                        inactiveYn = true;
-                    }
-                }
-            }
-        }
+        boolean inactiveYn = this.checkEndAsterisk(resInactiveApiList, requestMethodUri);
 
 
         if ((!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || ignoreSecurityLog) && !inactiveYn && !reqInactiveApiList.contains(requestMethodUri)) {
@@ -125,7 +115,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
                 int contentLength = Integer.parseInt(request.getHeader("Content-Length"));
                 if (contentType.contains("multipart/form-data")) {
                     body = "[multipart/form-data]";
-                } else if (reqSecretApiList.contains(requestMethodUri)) {
+                } else if (this.checkEndAsterisk(reqSecretApiList, requestMethodUri) || reqSecretApiList.contains(requestMethodUri)) {
                     body = "[secret! " + byteCalculation(contentLength) + "]";
                 } else {
                     if (reqMaxSize.isEmpty()) reqMaxSize = "1KB";
@@ -159,17 +149,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
         // inactive api '*' check
-        boolean inactiveYn = false;
-        if (resInactiveApiList.size() > 0) {
-            for (String api : resInactiveApiList) {
-                if (api.contains("*")) {
-                    String[] split = api.split("\\*");
-                    if (!split[0].isEmpty() && requestMethodUri.startsWith(split[0])) {
-                        inactiveYn = true;
-                    }
-                }
-            }
-        }
+        boolean inactiveYn = this.checkEndAsterisk(resInactiveApiList, requestMethodUri);
 
         if ((!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || ignoreSecurityLog) && !inactiveYn && !resInactiveApiList.contains(requestMethodUri)) {
             final ContentCachingResponseWrapper cachingResponse = (ContentCachingResponseWrapper) response;
@@ -203,7 +183,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
                     int payloadSize = payload.getBytes(StandardCharsets.UTF_8).length;
                     String payloadTextSize = byteCalculation(payloadSize);
 
-                    if (resSecretApiList.contains(requestMethodUri)) {
+                    if (this.checkEndAsterisk(reqSecretApiList, requestMethodUri) || resSecretApiList.contains(requestMethodUri)) {
                         payload = "[secret! " + payloadTextSize + "]";
                     } else {
                         if (resMaxSize.isEmpty()) resMaxSize = "1KB";
@@ -257,6 +237,21 @@ public class LoggingInterceptor implements HandlerInterceptor {
         }
 
         return 0;
+    }
+
+    private boolean checkEndAsterisk(List<String> apiList, String requestMethodUri) {
+        boolean asterisk = false;
+        if (apiList.size() > 0) {
+            for (String api : apiList) {
+                if (api.contains("*")) {
+                    String[] split = api.split("\\*");
+                    if (!split[0].isEmpty() && requestMethodUri.startsWith(split[0])) {
+                        asterisk = true;
+                    }
+                }
+            }
+        }
+        return asterisk;
     }
 
 }
