@@ -35,7 +35,7 @@ ext {
     version_validation = '2.3.7.RELEASE'
     version_junit = '5.2.0'
 
-    version_log4jweb = '2.17.0'
+    version_log4j = '2.17.0'
     version_disruptor = '3.4.4'
 
     version_log4j2 = '2.6.1'
@@ -66,6 +66,13 @@ bootJar {
 //    archiveName = project.properties["app.name"] + '-' + project.properties["app.version"] + "sb.${extension}"
 }
 
+//jar {
+//    enabled = true
+//    from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+//
+//    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+//}
+
 apply plugin: 'maven'
 uploadArchives {
     repositories {
@@ -92,6 +99,7 @@ configurations {
     all {
         // log4j2를 사용하기 위해, spring의 default인 logback을 제외
         exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+        exclude group: 'org.apache.logging.log4j'
     }
 }
 
@@ -115,7 +123,11 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter-log4j2'
     compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: "${version_jackson}"
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-web', version: "${version_log4jweb}"
+//    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: "${version_log4j}"
+//    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: "${version_log4j}"
+//    compile group: 'org.apache.logging.log4j', name: 'log4j-jul', version: "${version_log4j}"
+//    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: "${version_log4j}"
+//    compile group: 'org.apache.logging.log4j', name: 'log4j-web', version: "${version_log4j}"
     implementation group: 'com.lmax', name: 'disruptor', version: "${version_disruptor}"
 
     // log4jdbc-log4j2
