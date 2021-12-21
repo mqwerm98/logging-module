@@ -1,6 +1,7 @@
 package log.munzi.interceptor;
 
-import org.springframework.beans.factory.annotation.Value;
+import log.munzi.interceptor.config.ApiLogProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -10,6 +11,7 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -18,13 +20,10 @@ import java.util.List;
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
+@RequiredArgsConstructor
 public class GlobalRequestWrappingFilter implements Filter {
 
-    @Value("${custom.log-filter.request.secret.api}")
-    private List<String> reqSecretApiList;
-
-    @Value("${custom.log-filter.request.max-body-size}")
-    private String reqMaxSize;
+    private final ApiLogProperties apiLog;
 
     @Override
     public void init(FilterConfig filterConfig) {
@@ -38,15 +37,23 @@ public class GlobalRequestWrappingFilter implements Filter {
 
     /**
      * Request Servlet 에 담긴 내용을 열어보면 휘발되기 때문에, 로그로 남기기 위해 response body 에 담는 과정
-     * @param request ServletRequest
+     *
+     * @param request  ServletRequest
      * @param response ServletResponse
-     * @param chain Filter chain
-     * @throws IOException copyBodyToResponse 과정에서의 Exception
+     * @param chain    Filter chain
+     * @throws IOException      copyBodyToResponse 과정에서의 Exception
      * @throws ServletException doFilter 과정에서의 Exception
      */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-        HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request, reqSecretApiList, reqMaxSize);
+        List<String> secretApiList = new ArrayList<>();
+        String maxSize = "";
+        if (apiLog.getRequest() != null) {
+            secretApiList = apiLog.getRequest().getSecretApi();
+            maxSize = apiLog.getRequest().getMaxBodySize();
+        }
+
+        HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request, secretApiList, maxSize);
         ContentCachingResponseWrapper wrappingResponse = new ContentCachingResponseWrapper((HttpServletResponse) response);
 
         chain.doFilter(wrappingRequest, wrappingResponse);

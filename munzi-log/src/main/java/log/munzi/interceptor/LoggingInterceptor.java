@@ -1,9 +1,9 @@
 package log.munzi.interceptor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import log.munzi.interceptor.config.ApiLogProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
@@ -13,7 +13,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,29 +28,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     private final ObjectMapper objectMapper;
 
-    @Value("${custom.log-filter.use}")
-    private boolean logFilterUseYn;
-
-    @Value("${custom.ignore-security-log}")
-    private boolean ignoreSecurityLog = false;
-
-    @Value("${custom.log-filter.request.secret.api}")
-    private List<String> reqSecretApiList;
-
-    @Value("${custom.log-filter.response.secret.api}")
-    private List<String> resSecretApiList;
-
-    @Value("${custom.log-filter.request.inactive.api}")
-    private List<String> reqInactiveApiList;
-
-    @Value("${custom.log-filter.response.inactive.api}")
-    private List<String> resInactiveApiList;
-
-    @Value("${custom.log-filter.request.max-body-size}")
-    private String reqMaxSize;
-
-    @Value("${custom.log-filter.response.max-body-size}")
-    private String resMaxSize;
+    private final ApiLogProperties apiLog;
 
     private String requestMethodUri;
 
@@ -73,61 +50,68 @@ public class LoggingInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         requestMethodUri = request.getMethod() + " " + request.getRequestURI();
 
-        // inactive api '*' check
-        boolean inactiveYn = this.checkEndAsterisk(resInactiveApiList, requestMethodUri);
+        if (apiLog.isUse() && apiLog.getRequest() != null) {
+            // inactive api '*' check
+            boolean inactiveYn = this.checkEndAsterisk(apiLog.getRequest().getInactiveApi(), requestMethodUri);
 
+            if ((!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || apiLog.isIgnoreSecurityLog())
+                    && !inactiveYn
+                    && !apiLog.getRequest().getInactiveApi().contains(requestMethodUri)) {
+                StringBuilder headers = new StringBuilder();
+                Enumeration<String> headerNames = request.getHeaderNames();
+                String headerName;
+                while (headerNames.hasMoreElements()) {
+                    headerName = headerNames.nextElement();
+                    headers.append("\"");
+                    headers.append(headerName);
+                    headers.append("\":\"");
+                    headers.append(request.getHeader(headerName));
+                    headers.append("\", ");
+                }
+                int headersLength = headers.length();
+                if (headersLength >= 2) headers.delete(headersLength - 2, headersLength);
 
-        if ((!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || ignoreSecurityLog) && !inactiveYn && !reqInactiveApiList.contains(requestMethodUri)) {
-            StringBuilder headers = new StringBuilder();
-            Enumeration<String> headerNames = request.getHeaderNames();
-            String headerName;
-            while (headerNames.hasMoreElements()) {
-                headerName = headerNames.nextElement();
-                headers.append("\"");
-                headers.append(headerName);
-                headers.append("\":\"");
-                headers.append(request.getHeader(headerName));
-                headers.append("\", ");
-            }
-            int headersLength = headers.length();
-            if (headersLength >= 2) headers.delete(headersLength - 2, headersLength);
+                StringBuilder params = new StringBuilder();
+                Enumeration<String> paramNames = request.getParameterNames();
+                String paramName;
+                while (paramNames.hasMoreElements()) {
+                    paramName = paramNames.nextElement();
+                    params.append("\"");
+                    params.append(paramName);
+                    params.append("\":\"");
+                    params.append(request.getParameter(paramName));
+                    params.append("\", ");
+                }
+                int paramLength = params.length();
+                if (paramLength >= 2) params.delete(paramLength - 2, paramLength);
 
-            StringBuilder params = new StringBuilder();
-            Enumeration<String> paramNames = request.getParameterNames();
-            String paramName;
-            while (paramNames.hasMoreElements()) {
-                paramName = paramNames.nextElement();
-                params.append("\"");
-                params.append(paramName);
-                params.append("\":\"");
-                params.append(request.getParameter(paramName));
-                params.append("\", ");
-            }
-            int paramLength = params.length();
-            if (paramLength >= 2) params.delete(paramLength - 2, paramLength);
+                String body;
+                String contentType = request.getHeader("Content-Type");
 
-            String body = null;
-            String contentType = request.getHeader("Content-Type");
-
-            if (contentType == null || request.getHeader("Content-Length") == null) {
-                body = "";
-            } else {
-                int contentLength = Integer.parseInt(request.getHeader("Content-Length"));
-                if (contentType.contains("multipart/form-data")) {
-                    body = "[multipart/form-data]";
-                } else if (this.checkEndAsterisk(reqSecretApiList, requestMethodUri) || reqSecretApiList.contains(requestMethodUri)) {
-                    body = "[secret! " + byteCalculation(contentLength) + "]";
+                if (contentType == null || request.getHeader("Content-Length") == null) {
+                    body = "";
                 } else {
-                    if (reqMaxSize.isEmpty()) reqMaxSize = "1KB";
-                    if (contentLength > textSizeToByteSize(reqMaxSize)) {
-                        body = "[" + byteCalculation(contentLength) + "]";
+                    int contentLength = Integer.parseInt(request.getHeader("Content-Length"));
+                    if (contentType.contains("multipart/form-data")) {
+                        body = "[multipart/form-data]";
+                    } else if (this.checkEndAsterisk(apiLog.getRequest().getSecretApi(), requestMethodUri) || apiLog.getRequest().getSecretApi().contains(requestMethodUri)) {
+                        body = "[secret! " + byteCalculation(contentLength) + "]";
                     } else {
-                        body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator())).replaceAll("\\s", "");
+                        if (apiLog.getRequest().getMaxBodySize().isEmpty()) apiLog.getRequest().setMaxBodySize("1KB");
+                        if (contentLength > textSizeToByteSize(apiLog.getRequest().getMaxBodySize())) {
+                            body = "[" + byteCalculation(contentLength) + "]";
+                        } else {
+                            body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator())).replaceAll("\\s", "");
+                        }
                     }
                 }
-            }
 
-            log.info("REQUEST [{}], headers={{}}, params={{}}, body={}", requestMethodUri, headers, params, body);
+                if (this.checkEndAsterisk(apiLog.getDebugApi(), requestMethodUri) || apiLog.getDebugApi().contains(requestMethodUri)) {
+                    log.debug("REQUEST [{}], headers={{}}, params={{}}, body={}", requestMethodUri, headers, params, body);
+                } else {
+                    log.info("REQUEST [{}], headers={{}}, params={{}}, body={}", requestMethodUri, headers, params, body);
+                }
+            }
         }
 
         return HandlerInterceptor.super.preHandle(request, response, handler);
@@ -148,53 +132,59 @@ public class LoggingInterceptor implements HandlerInterceptor {
      */
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
-        // inactive api '*' check
-        boolean inactiveYn = this.checkEndAsterisk(resInactiveApiList, requestMethodUri);
+        if (apiLog.isUse() && apiLog.getResponse() != null) {
+            // inactive api '*' check
+            boolean inactiveYn = this.checkEndAsterisk(apiLog.getResponse().getInactiveApi(), requestMethodUri);
 
-        if ((!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || ignoreSecurityLog) && !inactiveYn && !resInactiveApiList.contains(requestMethodUri)) {
-            final ContentCachingResponseWrapper cachingResponse = (ContentCachingResponseWrapper) response;
+            if ((!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || apiLog.isIgnoreSecurityLog())
+                    && !inactiveYn
+                    && !apiLog.getResponse().getInactiveApi().contains(requestMethodUri)) {
+                final ContentCachingResponseWrapper cachingResponse = (ContentCachingResponseWrapper) response;
 
-            StringBuilder headers = new StringBuilder();
-            Enumeration<String> headerNames = request.getHeaderNames();
-            String headerName;
-            while (headerNames.hasMoreElements()) {
-                headerName = headerNames.nextElement();
-                headers.append("\"");
-                headers.append(headerName);
-                headers.append("\":\"");
-                headers.append(request.getHeader(headerName));
-                headers.append("\", ");
-            }
-            int headersLength = headers.length();
-            if (headersLength >= 2) headers.delete(headersLength - 2, headersLength);
-
-            String payload = "";
-            String contentType = cachingResponse.getContentType();
-            if (contentType != null) {
-                if (contentType.contains("application/json") && cachingResponse.getContentAsByteArray().length != 0) {
-                    payload = objectMapper.readTree(cachingResponse.getContentAsByteArray()).toString();
-                } else if (contentType.contains("text/plain")) {
-                    payload = new String(cachingResponse.getContentAsByteArray());
-                } else if (contentType.contains("multipart/form-data")) {
-                    payload = "[multipart/form-data]";
+                StringBuilder headers = new StringBuilder();
+                Enumeration<String> headerNames = request.getHeaderNames();
+                String headerName;
+                while (headerNames.hasMoreElements()) {
+                    headerName = headerNames.nextElement();
+                    headers.append("\"");
+                    headers.append(headerName);
+                    headers.append("\":\"");
+                    headers.append(request.getHeader(headerName));
+                    headers.append("\", ");
                 }
+                int headersLength = headers.length();
+                if (headersLength >= 2) headers.delete(headersLength - 2, headersLength);
 
-                if (logFilterUseYn) {
+                String payload = "";
+                String contentType = cachingResponse.getContentType();
+                if (contentType != null) {
+                    if (contentType.contains("application/json") && cachingResponse.getContentAsByteArray().length != 0) {
+                        payload = objectMapper.readTree(cachingResponse.getContentAsByteArray()).toString();
+                    } else if (contentType.contains("text/plain")) {
+                        payload = new String(cachingResponse.getContentAsByteArray());
+                    } else if (contentType.contains("multipart/form-data")) {
+                        payload = "[multipart/form-data]";
+                    }
+
                     int payloadSize = payload.getBytes(StandardCharsets.UTF_8).length;
                     String payloadTextSize = byteCalculation(payloadSize);
 
-                    if (this.checkEndAsterisk(reqSecretApiList, requestMethodUri) || resSecretApiList.contains(requestMethodUri)) {
+                    if (this.checkEndAsterisk(apiLog.getResponse().getSecretApi(), requestMethodUri) || apiLog.getResponse().getSecretApi().contains(requestMethodUri)) {
                         payload = "[secret! " + payloadTextSize + "]";
                     } else {
-                        if (resMaxSize.isEmpty()) resMaxSize = "1KB";
-                        if (payloadSize > textSizeToByteSize(resMaxSize)) {
+                        if (apiLog.getResponse().getMaxBodySize().isEmpty()) apiLog.getResponse().setMaxBodySize("1KB");
+                        if (payloadSize > textSizeToByteSize(apiLog.getResponse().getMaxBodySize())) {
                             payload = "[" + payloadTextSize + "]";
                         }
                     }
                 }
-            }
 
-            log.info("RESPONSE [{}], headers={{}}, payload={}", requestMethodUri, headers, payload);
+                if (this.checkEndAsterisk(apiLog.getDebugApi(), requestMethodUri) || apiLog.getDebugApi().contains(requestMethodUri)) {
+                    log.debug("RESPONSE [{}], headers={{}}, payload={}", requestMethodUri, headers, payload);
+                } else {
+                    log.info("RESPONSE [{}], headers={{}}, payload={}", requestMethodUri, headers, payload);
+                }
+            }
         }
 
         HandlerInterceptor.super.postHandle(request, response, handler, modelAndView);
@@ -241,7 +231,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     private boolean checkEndAsterisk(List<String> apiList, String requestMethodUri) {
         boolean asterisk = false;
-        if (apiList.size() > 0) {
+        if (apiList != null && apiList.size() > 0) {
             for (String api : apiList) {
                 if (api.contains("*")) {
                     String[] split = api.split("\\*");
