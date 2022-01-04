@@ -57,39 +57,39 @@ public class LoggingInterceptor implements HandlerInterceptor {
             if ((!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || apiLog.isIgnoreSecurityLog())
                     && !inactiveYn
                     && !apiLog.getRequest().getInactiveApi().contains(requestMethodUri)) {
-                StringBuilder headers = new StringBuilder();
+                StringBuilder headersBuilder = new StringBuilder();
                 Enumeration<String> headerNames = request.getHeaderNames();
                 String headerName;
                 while (headerNames.hasMoreElements()) {
                     headerName = headerNames.nextElement();
-                    headers.append("\"");
-                    headers.append(headerName);
-                    headers.append("\":\"");
-                    headers.append(request.getHeader(headerName));
-                    headers.append("\", ");
+                    headersBuilder.append("\"");
+                    headersBuilder.append(headerName);
+                    headersBuilder.append("\":\"");
+                    headersBuilder.append(request.getHeader(headerName).replaceAll("\"", "'"));
+                    headersBuilder.append("\", ");
                 }
-                int headersLength = headers.length();
-                if (headersLength >= 2) headers.delete(headersLength - 2, headersLength);
+                int headersLength = headersBuilder.length();
+                if (headersLength >= 2) headersBuilder.delete(headersLength - 2, headersLength);
 
-                StringBuilder params = new StringBuilder();
+                StringBuilder paramsBuilder = new StringBuilder();
                 Enumeration<String> paramNames = request.getParameterNames();
                 String paramName;
                 while (paramNames.hasMoreElements()) {
                     paramName = paramNames.nextElement();
-                    params.append("\"");
-                    params.append(paramName);
-                    params.append("\":\"");
-                    params.append(request.getParameter(paramName));
-                    params.append("\", ");
+                    paramsBuilder.append("\"");
+                    paramsBuilder.append(paramName);
+                    paramsBuilder.append("\":\"");
+                    paramsBuilder.append(request.getParameter(paramName));
+                    paramsBuilder.append("\", ");
                 }
-                int paramLength = params.length();
-                if (paramLength >= 2) params.delete(paramLength - 2, paramLength);
+                int paramLength = paramsBuilder.length();
+                if (paramLength >= 2) paramsBuilder.delete(paramLength - 2, paramLength);
 
                 String body;
                 String contentType = request.getHeader("Content-Type");
 
                 if (contentType == null || request.getHeader("Content-Length") == null) {
-                    body = "";
+                    body = "{}";
                 } else {
                     int contentLength = Integer.parseInt(request.getHeader("Content-Length"));
                     if (contentType.contains("multipart/form-data")) {
@@ -106,10 +106,18 @@ public class LoggingInterceptor implements HandlerInterceptor {
                     }
                 }
 
+                String headers = "{" + headersBuilder + "}";
+                String params = "{" + paramsBuilder + "}";
+                if (apiLog.isJsonPretty()) {
+                    headers = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectMapper.readValue(headers, Object.class));
+                    params = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectMapper.readValue(params, Object.class));
+                    body = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectMapper.readValue(body, Object.class));
+                }
+
                 if (this.checkEndAsterisk(apiLog.getDebugApi(), requestMethodUri) || apiLog.getDebugApi().contains(requestMethodUri)) {
-                    log.debug("REQUEST [{}], headers={{}}, params={{}}, body={}", requestMethodUri, headers, params, body);
+                    log.debug("REQUEST [{}], \nheaders={}, \nparams={}, \nbody={}", requestMethodUri, headers, params, body);
                 } else {
-                    log.info("REQUEST [{}], headers={{}}, params={{}}, body={}", requestMethodUri, headers, params, body);
+                    log.info("REQUEST [{}], \nheaders={}, \nparams={}, \nbody={}", requestMethodUri, headers, params, body);
                 }
             }
         }
@@ -141,19 +149,19 @@ public class LoggingInterceptor implements HandlerInterceptor {
                     && !apiLog.getResponse().getInactiveApi().contains(requestMethodUri)) {
                 final ContentCachingResponseWrapper cachingResponse = (ContentCachingResponseWrapper) response;
 
-                StringBuilder headers = new StringBuilder();
+                StringBuilder headersBuilder = new StringBuilder();
                 Enumeration<String> headerNames = request.getHeaderNames();
                 String headerName;
                 while (headerNames.hasMoreElements()) {
                     headerName = headerNames.nextElement();
-                    headers.append("\"");
-                    headers.append(headerName);
-                    headers.append("\":\"");
-                    headers.append(request.getHeader(headerName));
-                    headers.append("\", ");
+                    headersBuilder.append("\"");
+                    headersBuilder.append(headerName);
+                    headersBuilder.append("\":\"");
+                    headersBuilder.append(request.getHeader(headerName).replaceAll("\"", "'"));
+                    headersBuilder.append("\", ");
                 }
-                int headersLength = headers.length();
-                if (headersLength >= 2) headers.delete(headersLength - 2, headersLength);
+                int headersLength = headersBuilder.length();
+                if (headersLength >= 2) headersBuilder.delete(headersLength - 2, headersLength);
 
                 String payload = "";
                 String contentType = cachingResponse.getContentType();
@@ -179,10 +187,16 @@ public class LoggingInterceptor implements HandlerInterceptor {
                     }
                 }
 
+                String headers = "{" + headersBuilder + "}";
+                if (apiLog.isJsonPretty() && contentType != null && contentType.contains("application/json")) {
+                    headers = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectMapper.readValue(headers, Object.class));
+                    payload = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectMapper.readValue(payload, Object.class));
+                }
+
                 if (this.checkEndAsterisk(apiLog.getDebugApi(), requestMethodUri) || apiLog.getDebugApi().contains(requestMethodUri)) {
-                    log.debug("RESPONSE [{}], headers={{}}, payload={}", requestMethodUri, headers, payload);
+                    log.debug("RESPONSE [{}], \nheaders={}, \npayload={}", requestMethodUri, headers, payload);
                 } else {
-                    log.info("RESPONSE [{}], headers={{}}, payload={}", requestMethodUri, headers, payload);
+                    log.info("RESPONSE [{}], \nheaders={}, \npayload={}", requestMethodUri, headers, payload);
                 }
             }
         }

@@ -30,6 +30,8 @@ public class ApiLogProperties {
     // defaultLevel이 아닌 debug로 찍을 api 설정
     private List<String> debugApi = new ArrayList<>();
 
+    private boolean jsonPretty = false;
+
 
     @Data
     public static class LogRequestResponse {
