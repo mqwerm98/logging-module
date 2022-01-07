@@ -1,12 +1,22 @@
-# logging-module
-Logging module
+# Munzi Log - API Server를 위한 Request, Response Logging 처리 모듈
 
+## 적용 예시
+```bash
+# Request Log
+[INFO ] 2021/06/10 11:07:40.716 qtp460903925-31 [l.m.i.LoggingInterceptor.preHandle:88] REQUEST [POST /hello], 
+headers={"Accept":"*/*", "User-Agent":"PostmanRuntime/7.26.10", "Connection":"keep-alive", "Postman-Token":"88ed20f8-cb8a-4a17-b4b0-6acb813abd39", "Host":"localhost:10009", "Accept-Encoding":"gzip, deflate, br", "Content-Length":"46", "Content-Type":"application/json"}, 
+params={}, 
+body={"name":"승리를","name2":"tt"}
 
+# Response Log
+[INFO ] 2021/06/10 11:07:40.856 qtp460903925-31 [l.m.i.LoggingInterceptor.postHandle:125] RESPONSE [POST /hello], 
+headers={"Accept":"*/*", "User-Agent":"PostmanRuntime/7.26.10", "Connection":"keep-alive", "Postman-Token":"88ed20f8-cb8a-4a17-b4b0-6acb813abd39", "Host":"localhost:10009", "Accept-Encoding":"gzip, deflate, br", "Content-Length":"46", "Content-Type":"application/json"}, 
+payload={"name":"승리를"}
+```
 
+# 로깅 모듈 적용
 
-
-
-<build.gradle>
+### 0. 의존성 추가 (build.gradle)
 
 ```groovy
 ext {
@@ -46,8 +56,6 @@ dependencies {
   compile group: 'org.apache.logging.log4j', name: 'log4j-web', version: "${version_log4j}"
 }
 ```
-
-# 로깅 모듈 적용
 
 ---
 
@@ -169,22 +177,22 @@ public class GlobalRequestWrappingFilter implements Filter {
 
 ```yaml
 spring:
-	output:
+  output:
     ansi:
       enabled: ALWAYS # 로그 알록달록 예쁘게 나오게 설정
-	datasource: # log4jdbc-log4j2 사용시 필요한 설정
-		driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy # 고정
-		url: jdbc:log4jdbc:mariadb~~~ # 기존 jdbc:mariadb~~ 이런식으로 썼던 부분 사이에 log4jdbc 추가
+  datasource: # log4jdbc-log4j2 사용시 필요한 설정
+    driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy # 고정
+    url: jdbc:log4jdbc:mariadb~~~ # 기존 jdbc:mariadb~~ 이런식으로 썼던 부분 사이에 log4jdbc 추가
 
 logging:
-	config: file:/apps/dkargo/munzi-log/config/log4j2-local.yml #log4j2.yml 파일의 경로
+  config: file:/apps/dkargo/munzi-log/config/log4j2-local.yml #log4j2.yml 파일의 경로
   # config: classpath:log4j2-local.yml # resources 하위의 경우
 
 api-log:
   ignore-security-log: true # default = false, true일 경우에만 security여도 로그 찍음
   use: true # request, response 로그를 찍는지 여부
-	json-pretty: true # request, response 로그 내 json 데이터를 정렬해서 보여줄지 여부
-  debug-api: GET /api/debug/*
+  json-pretty: true # request, response 로그 내 json 데이터를 정렬해서 보여줄지 여부
+  debug-api: GET /api/debug/* # info가 아닌, debug로 찍고 싶은 api 목록
   request:
     max-body-size: 1 MB # request body max size
     secret-api: # 해당 api의 경우, body 전체를 로그에 안찍음
@@ -222,7 +230,7 @@ Configuration:
         value: "munzi-db-log.log"
       - name: log-pattern
         value: "%highlight{[%-5p]}{FATAL=bg_red, ERROR=red, INFO=green, DEBUG=blue} %style{%d{yyyy/MM/dd HH:mm:ss.SSS}}{cyan} %style{%t}{yellow} %style{[%C{1.}.%M:%L]}{blue} %m%n"
-			- name: log-pattern-no-color
+      - name: log-pattern-no-color
         value: "[%-5p] %d{yyyy/MM/dd HH:mm:ss.SSS} %t [%C{1.}.%M:%L] %m%n"
 
   Appenders: # 3
@@ -415,33 +423,31 @@ Configuration:
     RollingFile : 파일에 찍고, 특정 기준에 따라 압축
     
     자세한 내용은 아래 링크 참고!
-    
-
-[Log4j 2 제대로 사용하기 - 개념](https://velog.io/@bread_dd/Log4j-2-%EC%A0%9C%EB%8C%80%EB%A1%9C-%EC%82%AC%EC%9A%A9%ED%95%98%EA%B8%B0-%EA%B0%9C%EB%85%90)
+    [Log4j 2 제대로 사용하기 - 개념](https://velog.io/@bread_dd/Log4j-2-%EC%A0%9C%EB%8C%80%EB%A1%9C-%EC%82%AC%EC%9A%A9%ED%95%98%EA%B8%B0-%EA%B0%9C%EB%85%90)
 
 4. Logger : 어디에서 찍을지 설정할 부분
 
 5. Root : 모든 로그
 
-→ INFO 레벨 이상의 모든 로그를 Console_Appender를 이용해 찍겠다고 설정한 부분
+	→ INFO 레벨 이상의 모든 로그를 Console_Appender를 이용해 찍겠다고 설정한 부분
 
 6. 패키지 단위 설정
 
-동기 방식의 Logger가 있고, 비동기 방식의 AsyncLogger가 있는데
+	동기 방식의 Logger가 있고, 비동기 방식의 AsyncLogger가 있는데
 
-비동기 방식을 사용할 경우, includeLocation: true를 설정해 줘야 호출한 경로를 찾아올 수 있으므로 붙여주자.
+	비동기 방식을 사용할 경우, includeLocation: true를 설정해 줘야 호출한 경로를 찾아올 수 있으므로 붙여주자.
 
-name : package 경로
+	name : package 경로
 
-additivity : 중복 제거 설정
+	additivity : 중복 제거 설정
 
-1.  log4jdbc-log4j2를 사용하는 경우, log4jdbc.log4j2에서 모든 로그를 찍고 있기 때문에
+7.  log4jdbc-log4j2를 사용하는 경우, log4jdbc.log4j2에서 모든 로그를 찍고 있기 때문에
     
     기존에 application.yml에서 logging.jdbc.connection: ERROR 식으로 썼던 부분을 상세하게 설정하고 싶은 경우엔 MarkerFilter를 사용해서 설정해 주면 된다.
     
     위 소스는 jdbc.resultsettable이면 찍고, 그 외에는 모두 찍지 않겠다고 설정해 놓은 것이다.
     
-2. 멀티모듈의 경우 로그를 해당 패키지가 아닌 이 로깅 모듈에서 설정한 interceptor(log.munzi.interceptor)에서 찍기 때문에 다음을 추가해 주어야 한다.
+8. 멀티모듈의 경우 로그를 해당 패키지가 아닌 이 로깅 모듈에서 설정한 interceptor(log.munzi.interceptor)에서 찍기 때문에 다음을 추가해 주어야 한다.
 
 ---
 
