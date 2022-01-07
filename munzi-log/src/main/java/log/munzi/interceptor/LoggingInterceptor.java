@@ -111,7 +111,9 @@ public class LoggingInterceptor implements HandlerInterceptor {
                 if (apiLog.isJsonPretty()) {
                     headers = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectMapper.readValue(headers, Object.class));
                     params = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectMapper.readValue(params, Object.class));
-                    body = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectMapper.readValue(body, Object.class));
+                    if (body.startsWith("{") && body.endsWith("}")) {
+                        body = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectMapper.readValue(body, Object.class));
+                    }
                 }
 
                 if (this.checkEndAsterisk(apiLog.getDebugApi(), requestMethodUri) || apiLog.getDebugApi().contains(requestMethodUri)) {
@@ -190,7 +192,9 @@ public class LoggingInterceptor implements HandlerInterceptor {
                 String headers = "{" + headersBuilder + "}";
                 if (apiLog.isJsonPretty() && contentType != null && contentType.contains("application/json")) {
                     headers = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectMapper.readValue(headers, Object.class));
-                    payload = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectMapper.readValue(payload, Object.class));
+                    if (payload.startsWith("{") && payload.endsWith("}")) {
+                        payload = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectMapper.readValue(payload, Object.class));
+                    }
                 }
 
                 if (this.checkEndAsterisk(apiLog.getDebugApi(), requestMethodUri) || apiLog.getDebugApi().contains(requestMethodUri)) {
