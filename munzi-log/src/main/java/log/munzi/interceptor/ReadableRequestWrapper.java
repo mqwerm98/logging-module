@@ -28,9 +28,9 @@ public class ReadableRequestWrapper extends HttpServletRequestWrapper {
 
 
     /**
-     * @param request HttpServletRequest
+     * @param request          HttpServletRequest
      * @param reqSecretApiList body를 로그에 찍지 않을 api list (ex. POST /api/secret)
-     * @param reqMaxSize request body max size
+     * @param reqMaxSize       request body max size
      */
     public ReadableRequestWrapper(HttpServletRequest request, List<String> reqSecretApiList, String reqMaxSize) {
         super(request);
@@ -42,7 +42,7 @@ public class ReadableRequestWrapper extends HttpServletRequestWrapper {
             if (reqMaxSize.isEmpty()) reqMaxSize = "1KB";
             if (request.getContentType() == null
                     || request.getContentType().contains("multipart/form-data")
-                    || reqSecretApiList.contains(request.getMethod() + " " + request.getRequestURI())
+                    || (reqSecretApiList != null && reqSecretApiList.contains(request.getMethod() + " " + request.getRequestURI()))
                     || request.getContentLengthLong() <= 0
                     || request.getContentLengthLong() > textSizeToByteSize(reqMaxSize)) {
                 this.read = false;
