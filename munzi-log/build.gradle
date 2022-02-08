@@ -7,16 +7,12 @@ plugins {
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java'
     id 'maven'
-    id 'maven-publish'
+//    id 'maven-publish'
     id 'signing'
 }
 
 bootJar.enabled = false
 jar.enabled = true
-
-java {
-    withJavadocJar()
-}
 
 ext {
     version_project = project.properties["app.version"]
@@ -48,7 +44,7 @@ ext {
 }
 
 group = project.properties["app.group"]
-version = ext.version_project
+version = project.properties["app.version"]
 sourceCompatibility = '1.8'
 
 compileJava.options.encoding = ext.project_build_sourceEncoding
@@ -78,34 +74,42 @@ artifacts {
 }
 
 signing {
+    required { gradle.taskGraph.hasTask("uploadArchives") }
     sign configurations.archives
 }
 
-//jar {
-//    enabled = true
-//    from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
-//
-//    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-//}
+jar {
+    enabled = true
+    from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
 
-apply plugin: 'maven'
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 uploadArchives {
     repositories {
         mavenDeployer {
             beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-            repository(url: project.properties["nexus.dkargo.url.release"]) {
-                authentication(userName: project.properties["nexus.dkargo.username"], password: project.properties["nexus.dkargo.password"])
+//            repository(url: project.properties["nexus.url.release"]) {
+//                authentication(userName: project.properties["nexus.username"], password: project.properties["nexus.password"])
+//            }
+//            snapshotRepository(url: project.properties["nexus.url.snapshot"]) {
+//                authentication(userName: project.properties["nexus.username"], password: project.properties["nexus.password"])
+//            }
+
+            repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: project.properties['ossrhUsername'], password: project.properties['ossrhPassword'])
             }
-            snapshotRepository(url: project.properties["nexus.dkargo.url.snapshot"]) {
-                authentication(userName: project.properties["nexus.dkargo.username"], password: project.properties["nexus.dkargo.password"])
+
+            snapshotRepository(url: "https://s01.oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: project.properties['ossrhUsername'], password: project.properties['ossrhPassword'])
             }
 
             pom.project {
-                name 'Plankton library'
+                name 'Munzi Log'
                 packaging 'jar'
                 // optionally artifactId can be defined here
-//                description 'A application used as an example on how to set up pushing  its components to the Central Repository.'
+                description 'api server request, response log managing'
                 url 'https://github.com/mqwerm98/logging-module'
 
                 scm {
@@ -123,12 +127,13 @@ uploadArchives {
 
                 developers {
                     developer {
-                        id 'munzi'
+                        id 'mqwerm98'
                         name 'munzi'
                         email 'mqwerm98@naver.com'
                     }
                 }
             }
+
         }
     }
 }
