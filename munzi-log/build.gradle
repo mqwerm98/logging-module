@@ -3,12 +3,11 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
 plugins {
-    id 'org.springframework.boot' version '2.4.2'
-    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
-    id 'java'
-    id 'maven'
-//    id 'maven-publish'
-    id 'signing'
+    id 'org.springframework.boot' version '3.1.0'
+    id 'io.spring.dependency-management' version '1.1.0'
+    id 'java-library'
+    id 'maven-publish'
+//    id 'signing'
 }
 
 bootJar.enabled = false
@@ -38,14 +37,14 @@ ext {
     version_log4j2 = '2.6.1'
 
 
-    version_java = '1.8'
+    version_java = '17'
     project_build_sourceEncoding = 'UTF-8'
 
 }
 
 group = project.properties["app.group"]
 version = project.properties["app.version"]
-sourceCompatibility = '1.8'
+sourceCompatibility = '17'
 
 compileJava.options.encoding = ext.project_build_sourceEncoding
 
@@ -53,7 +52,7 @@ springBoot {
     buildInfo {
         properties {
             additional = [
-                    'fullVersion' : project.properties["app.version"] + '.' + LocalDateTime.ofInstant(properties["time"], ZoneOffset.systemDefault()).format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+                    'fullVersion' : project.properties["app.version"]
             ]
         }
     }
@@ -73,10 +72,10 @@ artifacts {
     archives javadocJar, sourcesJar
 }
 
-signing {
-    required { gradle.taskGraph.hasTask("uploadArchives") }
-    sign configurations.archives
-}
+//signing {
+//    required { gradle.taskGraph.hasTask("uploadArchives") }
+//    sign configurations.archives
+//}
 
 jar {
     enabled = true
@@ -85,54 +84,55 @@ jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-uploadArchives {
+publishing {
     repositories {
-        mavenDeployer {
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+        maven {
 
-//            repository(url: project.properties["nexus.url.release"]) {
-//                authentication(userName: project.properties["nexus.username"], password: project.properties["nexus.password"])
+            def releasesRepoUrl = layout.buildDirectory.dir(project.properties["nexus.url.release"])
+            def snapshotsRepoUrl = layout.buildDirectory.dir(project.properties["nexus.url.snapshot"])
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            credentials {
+                username project.properties["nexus.username"]
+                password project.properties["nexus.password"]
+            }
+
+//            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+//            repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
+//                authentication(userName: project.properties['ossrhUsername'], password: project.properties['ossrhPassword'])
 //            }
-//            snapshotRepository(url: project.properties["nexus.url.snapshot"]) {
-//                authentication(userName: project.properties["nexus.username"], password: project.properties["nexus.password"])
+//
+//            snapshotRepository(url: "https://s01.oss.sonatype.org/content/repositories/snapshots/") {
+//                authentication(userName: project.properties['ossrhUsername'], password: project.properties['ossrhPassword'])
 //            }
-
-            repository(url: "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                authentication(userName: project.properties['ossrhUsername'], password: project.properties['ossrhPassword'])
-            }
-
-            snapshotRepository(url: "https://s01.oss.sonatype.org/content/repositories/snapshots/") {
-                authentication(userName: project.properties['ossrhUsername'], password: project.properties['ossrhPassword'])
-            }
-
-            pom.project {
-                name 'Munzi Log'
-                packaging 'jar'
-                // optionally artifactId can be defined here
-                description 'api server request, response log managing'
-                url 'https://github.com/mqwerm98/logging-module'
-
-                scm {
-                    connection 'scm:git:git://github.com/mqwerm98/logging-module.git'
-                    developerConnection 'scm:git:git://github.com/mqwerm98/logging-module.git'
-                    url 'scm:git:git://github.com/mqwerm98/logging-module.git'
-                }
-
-                licenses {
-                    license {
-                        name 'The Apache License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
-
-                developers {
-                    developer {
-                        id 'mqwerm98'
-                        name 'munzi'
-                        email 'mqwerm98@naver.com'
-                    }
-                }
-            }
+//
+//            pom.project {
+//                name 'Munzi Log'
+//                packaging 'jar'
+//                // optionally artifactId can be defined here
+//                description 'api server request, response log managing'
+//                url 'https://github.com/mqwerm98/logging-module'
+//
+//                scm {
+//                    connection 'scm:git:git://github.com/mqwerm98/logging-module.git'
+//                    developerConnection 'scm:git:git://github.com/mqwerm98/logging-module.git'
+//                    url 'scm:git:git://github.com/mqwerm98/logging-module.git'
+//                }
+//
+//                licenses {
+//                    license {
+//                        name 'The Apache License, Version 2.0'
+//                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+//                    }
+//                }
+//
+//                developers {
+//                    developer {
+//                        id 'mqwerm98'
+//                        name 'munzi'
+//                        email 'mqwerm98@naver.com'
+//                    }
+//                }
+//            }
 
         }
     }
@@ -170,10 +170,10 @@ dependencies {
 
 
     // log4j2
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-log4j2', version: "${version_log4j2}"
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-log4j2'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-log4j2'
-    compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: "${version_jackson}"
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: "${version_jackson}"
 //    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: "${version_log4j}"
 //    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: "${version_log4j}"
 //    compile group: 'org.apache.logging.log4j', name: 'log4j-jul', version: "${version_log4j}"
@@ -182,7 +182,7 @@ dependencies {
     implementation group: 'com.lmax', name: 'disruptor', version: "${version_disruptor}"
 
     // log4jdbc-log4j2
-    compile group: 'org.bgee.log4jdbc-log4j2', name: 'log4jdbc-log4j2-jdbc4.1', version: "${version_log4jdbc}"
+    implementation group: 'org.bgee.log4jdbc-log4j2', name: 'log4jdbc-log4j2-jdbc4.1', version: '1.16'
 
 }
 
