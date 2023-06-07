@@ -7,6 +7,9 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * API Log 설정
+ */
 @Data
 @Component
 @ConfigurationProperties(prefix = "api-log")
@@ -33,6 +36,9 @@ public class ApiLogProperties {
     private boolean jsonPretty = false;
 
 
+    /**
+     * API Log 설정 Request, Response DTO
+     */
     @Data
     public static class LogRequestResponse {
 
