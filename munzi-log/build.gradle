@@ -59,11 +59,6 @@ java {
     withSourcesJar()
 }
 
-//signing {
-//    required { gradle.taskGraph.hasTask("uploadArchives") }
-//    sign configurations.archives
-//}
-
 jar {
     enabled = true
     from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
@@ -112,13 +107,13 @@ publishing {
     }
     repositories {
         maven {
-            def releasesRepoUrl = project.properties["nexus.url.release"]
-            def snapshotsRepoUrl = project.properties["nexus.url.snapshot"]
+            def releasesRepoUrl = project.property("nexus.url.release")
+            def snapshotsRepoUrl = project.properties("nexus.url.snapshot")
             url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
 
             credentials {
-                username = project.properties["nexus.username"]
-                password = project.properties["nexus.password"]
+                username = project.property("nexus.username")
+                password = project.properties("nexus.password")
             }
 //            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
