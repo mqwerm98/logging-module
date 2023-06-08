@@ -3,7 +3,7 @@ plugins {
     id 'io.spring.dependency-management' version '1.1.0'
     id 'java-library'
     id 'maven-publish'
-//    id 'signing'
+    id 'signing'
 }
 
 bootJar.enabled = false
@@ -61,19 +61,31 @@ java {
 
 jar {
     enabled = true
-    from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
 
+    from(sourceSets.main.output) {
+        exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+    }
+    archiveClassifier.set('')
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            groupId = project.properties["app.group"]
-            artifactId = project.properties["app.name"]
-            version = project.properties["app.version"]
+            groupId = project.property("app.group")
+            artifactId = project.property("app.name")
+            version = project.property("app.version")
 
             from components.java
+
+            versionMapping {
+                usage('java-api') {
+                    fromResolutionOf('runtimeClasspath')
+                }
+                usage('java-runtime') {
+                    fromResolutionResult()
+                }
+            }
 
             pom {
                 name = 'Munzi Log'
@@ -107,43 +119,39 @@ publishing {
     }
     repositories {
         maven {
-            def releasesRepoUrl = project.property("nexus.url.release")
-            def snapshotsRepoUrl = project.properties("nexus.url.snapshot")
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+//            def releasesRepoUrl = project.property("nexus.url.release")
+//            def snapshotsRepoUrl = project.property("nexus.url.snapshot")
+//            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+//
+//            credentials {
+//                username = project.property("nexus.username")
+//                password = project.property("nexus.password")
+//            }
 
             credentials {
-                username = project.property("nexus.username")
-                password = project.properties("nexus.password")
+                username = project.property("ossrh.username")
+                password = project.property("ossrh.password")
             }
-//            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-
-//            credentials {
-//                username project.properties["ossrh.username"]
-//                password project.properties["ossrh.password"]
-//            }
-//
-//            def releasesRepoUrl = layout.buildDirectory.dir(project.properties["ossrh.url.release"])
-//            def snapshotsRepoUrl = layout.buildDirectory.dir(project.properties["ossrh.url.snapshot"])
-//            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            def releasesRepoUrl = project.property("ossrh.url.release")
+            def snapshotsRepoUrl = project.property("ossrh.url.snapshot")
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
 
         }
     }
 }
 
-//signing {
-//    sign publishing.publications.mavenJava
-//}
+signing {
+    sign publishing.publications.mavenJava
+}
+
+javadoc {
+    if(JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption('html5', true)
+    }
+}
 
 configurations {
-    developmentOnly
-    runtimeClasspath {
-        extendsFrom developmentOnly
-    }
-    compileOnly {
-        extendsFrom annotationProcessor
-    }
-
     all {
         // log4j2를 사용하기 위해, spring의 default인 logback을 제외
         exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
@@ -171,11 +179,6 @@ dependencies {
 
     testImplementation 'org.springframework.boot:spring-boot-starter-log4j2'
     implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: "${version_jackson}"
-//    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: "${version_log4j}"
-//    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: "${version_log4j}"
-//    compile group: 'org.apache.logging.log4j', name: 'log4j-jul', version: "${version_log4j}"
-//    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: "${version_log4j}"
-//    compile group: 'org.apache.logging.log4j', name: 'log4j-web', version: "${version_log4j}"
     implementation group: 'com.lmax', name: 'disruptor', version: "${version_disruptor}"
 
     // log4jdbc-log4j2
