@@ -1,6 +1,6 @@
 plugins {
-    id 'org.springframework.boot' version '3.1.0'
-    id 'io.spring.dependency-management' version '1.1.0'
+    id 'org.springframework.boot' version '2.7.3'
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
     id 'java-library'
     id 'maven-publish'
     id 'signing'
@@ -33,14 +33,14 @@ ext {
     version_log4j2 = '2.6.1'
 
 
-    version_java = '17'
+    version_java = '11'
     project_build_sourceEncoding = 'UTF-8'
 
 }
 
 group = project.properties["app.group"]
 version = project.properties["app.version"]
-sourceCompatibility = '17'
+sourceCompatibility = '11'
 
 compileJava.options.encoding = ext.project_build_sourceEncoding
 
