@@ -5,14 +5,17 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import log.munzi.interceptor.config.ApiLogProperties;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Request Servlet에 담긴 내용을 열어서 Request, Response 로그를 남겨야 하지만
@@ -56,9 +59,15 @@ public class GlobalRequestWrappingFilter implements Filter {
         HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request, secretApiList, maxSize);
         ContentCachingResponseWrapper wrappingResponse = new ContentCachingResponseWrapper((HttpServletResponse) response);
 
+        MDC.put("requestId", UUID.randomUUID().toString().substring(0,8));
+        MDC.put("applicationName", InetAddress.getLocalHost().getHostAddress());
+
         chain.doFilter(wrappingRequest, wrappingResponse);
 
         wrappingResponse.copyBodyToResponse(); // 캐시를 copy해 return될 response body에 저장
+
+        MDC.remove("requestId");
+        MDC.remove("applicationName");
     }
 
 }

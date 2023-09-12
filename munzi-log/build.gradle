@@ -184,6 +184,10 @@ dependencies {
     // log4jdbc-log4j2
     implementation group: 'org.bgee.log4jdbc-log4j2', name: 'log4jdbc-log4j2-jdbc4.1', version: '1.16'
 
+    // json
+    implementation group: 'org.json', name: 'json', version: '20230618'
+
+
 }
 
 test {
