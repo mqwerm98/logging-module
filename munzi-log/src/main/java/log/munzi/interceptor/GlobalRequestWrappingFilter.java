@@ -59,7 +59,7 @@ public class GlobalRequestWrappingFilter implements Filter {
         HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request, secretApiList, maxSize);
         ContentCachingResponseWrapper wrappingResponse = new ContentCachingResponseWrapper((HttpServletResponse) response);
 
-        MDC.put("requestId", UUID.randomUUID().toString().substring(0,8));
+        MDC.put("requestId", UUID.randomUUID().toString());
         MDC.put("applicationName", InetAddress.getLocalHost().getHostAddress());
 
         chain.doFilter(wrappingRequest, wrappingResponse);
