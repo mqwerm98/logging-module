@@ -3,15 +3,23 @@
 ## 적용 예시
 ```bash
 # Request Log
-[INFO ] 2021/06/10 11:07:40.716 qtp460903925-31 [l.m.i.LoggingInterceptor.preHandle:88] REQUEST [POST /hello], 
+[INFO ] 2023/09/12 15:19:00.956 [127.0.0.1 772f27b1-d5d9-4453-8bbb-daa8f54df0cd] http-nio-10108-exec-1 [l.m.i.LoggingInterceptor.preHandle:127] REQ > [POST /hello],
 headers={"Accept":"*/*", "User-Agent":"PostmanRuntime/7.26.10", "Connection":"keep-alive", "Postman-Token":"88ed20f8-cb8a-4a17-b4b0-6acb813abd39", "Host":"localhost:10009", "Accept-Encoding":"gzip, deflate, br", "Content-Length":"46", "Content-Type":"application/json"}, 
 params={}, 
 body={"name":"승리를","name2":"tt"}
 
 # Response Log
-[INFO ] 2021/06/10 11:07:40.856 qtp460903925-31 [l.m.i.LoggingInterceptor.postHandle:125] RESPONSE [POST /hello], 
+[INFO ] 2023/09/12 15:22:06.643 [127.0.0.1 6b7da681-6fee-4de8-9e83-6c42d790ba9a] http-nio-10108-exec-4 [l.m.i.LoggingInterceptor.postHandle:209] RES > 201 [POST /hello] 6ms,
 headers={"Accept":"*/*", "User-Agent":"PostmanRuntime/7.26.10", "Connection":"keep-alive", "Postman-Token":"88ed20f8-cb8a-4a17-b4b0-6acb813abd39", "Host":"localhost:10009", "Accept-Encoding":"gzip, deflate, br", "Content-Length":"46", "Content-Type":"application/json"}, 
 payload={"name":"승리를"}
+
+# Checked Exception Error Log
+[ERROR] 2023/09/12 15:20:47.440 [127.0.0.1 1f125f13-ba47-42e7-90d3-7cb388a4dfcf] http-nio-10108-exec-3 [l.m.i.ErrorAspect.recordErrorLog:71] ERR > httpStatus=400, errorCode="003", errorType="org.springframework.web.bind.MethodArgumentNotValidException", message="[issuedDate] 널이어서는 안됩니다",
+stackTrace="Validation failed for argument [1] in public java.lang.String ..."
+
+# Unchecked Exception Error Log
+[ERROR] 2023/09/12 15:29:38.290 [127.0.0.1 faaa0aaa-2914-4202-8ce3-329f3cf7ddae] http-nio-10108-exec-4 [l.m.i.ErrorAspect.recordErrorLog:71] ERR > httpStatus=500, errorCode="", errorType="java.lang.NullPointerException", message="Cannot invoke \"net.test.api.module.dto.request.ReqDto.getNumber()\" because \"reqDto\" is null",
+stackTrace="Cannot invoke ..."
 ```
 
 # 로깅 모듈 적용
@@ -37,23 +45,20 @@ configurations {
 
 repositories {
 	mavenCentral()
-  maven {
-      credentials {
-          username project.properties["nexus.dkargo.username"]
-          password project.properties["nexus.dkargo.password"]
-      }
-      url project.properties["nexus.dkargo.url.release"]
-  }
 }
 
 dependencies {
-	implementation group:'log.munzi', name:'munzi-log', version:'0.1.1'
+	implementation group:'log.munzi', name:'munzi-log', version:'0.1.3'
 
-  compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: "${version_log4j}"
-  compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: "${version_log4j}"
-  compile group: 'org.apache.logging.log4j', name: 'log4j-jul', version: "${version_log4j}"
-  compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: "${version_log4j}"
-  compile group: 'org.apache.logging.log4j', name: 'log4j-web', version: "${version_log4j}"
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: "${version_log4j}"
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: "${version_log4j}"
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-jul', version: "${version_log4j}"
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: "${version_log4j}"
+	implementation group: 'org.apache.logging.log4j', name: 'log4j-web', version: "${version_log4j}"
+	implementation group: 'org.springframework.boot', name: 'spring-boot-starter-log4j2'
+	implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: "${version_jackson}"
+	implementation group: 'org.bgee.log4jdbc-log4j2', name: 'log4jdbc-log4j2-jdbc4.1', version: '1.16'
+	implementation group: 'org.json', name: 'json', version: '20230618'
 }
 ```
 
@@ -70,17 +75,19 @@ public class ApiApplication {
 }
 ```
 
-### 2. Interceptor bean 등록
+### 2. Filter, Interceptor bean 등록
 
 <LoggingConfig.java>
 
 ```java
 import com.fasterxml.jackson.databind.ObjectMapper;
+import log.munzi.interceptor.GlobalRequestWrappingFilter;
 import log.munzi.interceptor.LoggingInterceptor;
 import log.munzi.interceptor.config.ApiLogProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import log.munzi.interceptor.ErrorAspect;
 
 @Configuration
 @RequiredArgsConstructor
@@ -92,10 +99,51 @@ public class LoggingConfig {
     public LoggingInterceptor loggingInterceptor() {
         return new LoggingInterceptor(new ObjectMapper(), apiLogProperties);
     }
+
+    @Bean // security 사용시에만 등록
+    public GlobalRequestWrappingFilter globalRequestWrappingFilter() {
+        return new GlobalRequestWrappingFilter(apiLogProperties);
+    }
+
+    @Bean // error log 찍을때에만 등록
+    public ErrorAspect errorAspect() {
+        return new ErrorAspect();
+    }
 }
 ```
 
-### 3. bean 등록한 Interceptor 적용
+### 3. bean 등록한 Filter 적용
+
+GlobalRequestWrappingFilter는 기본적으로 Filter 우선순위 제일 아래로 등록이 된다.
+하지만 security 설정이 들어가면 Filter Chain에 제대로 들어가지 않는 오류(?)가 있어서
+SecurityConfig 설정을 해줄 때, addFilter를 해줘야 한다.
+
+<SecurityConfig.java (Security Configuration Class)>
+
+```java
+@Configuration
+@EnableWebSecurity
+@RequiredArgsConstructor
+@EnableMethodSecurity(prePostEnabled = true)
+public class SecurityConfig {
+
+	@Bean
+	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+	    ...
+	
+	    http.addFilterBefore(munziLoginFilter(), UsernamePasswordAuthenticationFilter.class);
+	    http.addFilterBefore(globalRequestWrappingFilter, UsernamePasswordAuthenticationFilter.class);
+	
+	    return http.build();
+	}
+}
+```
+다음과 같이 addFilter를 해준다.
+꼭 UserNamePasswordAuthenticationFiler 하위에 해줄 필요는 없다.
+SpringSecurityFilter들보다만 후순위로 들어가게 설정해주면 된다.
+
+
+### 4. bean 등록한 Interceptor 적용
 
 <WebMvcConfig.java>
 
@@ -122,33 +170,58 @@ public class WebMvcConfig implements WebMvcConfigurer {
 }
 ```
 
-### 4. interceptor 사용을 위한 Filter 처리
+### 5. interceptor 사용을 위한 Filter 처리
 
 <GlobalRequestWrappingFilter.java>
 
 ```java
-import log.munzi.interceptor.ReadableRequestWrapper;
+import jakarta.servlet.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import log.munzi.interceptor.config.ApiLogProperties;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
-import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
+/**
+ * Request Servlet에 담긴 내용을 열어서 Request, Response 로그를 남겨야 하지만
+ * Request Servlet은 휘발성이기 때문에, 해당 내용을 response body에 담도록 설정하는 Filter 역할.
+ */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
+@Order(Ordered.LOWEST_PRECEDENCE)
 @RequiredArgsConstructor
 public class GlobalRequestWrappingFilter implements Filter {
 
     private final ApiLogProperties apiLog;
 
+    @Override
+    public void init(FilterConfig filterConfig) {
+
+    }
+
+    @Override
+    public void destroy() {
+
+    }
+
+    /**
+     * Request Servlet 에 담긴 내용을 열어보면 휘발되기 때문에, 로그로 남기기 위해 response body 에 담는 과정
+     *
+     * @param request  ServletRequest
+     * @param response ServletResponse
+     * @param chain    Filter chain
+     * @throws IOException      copyBodyToResponse 과정에서의 Exception
+     * @throws ServletException doFilter 과정에서의 Exception
+     */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
         List<String> secretApiList = new ArrayList<>();
@@ -161,9 +234,15 @@ public class GlobalRequestWrappingFilter implements Filter {
         HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request, secretApiList, maxSize);
         ContentCachingResponseWrapper wrappingResponse = new ContentCachingResponseWrapper((HttpServletResponse) response);
 
+        MDC.put("requestId", UUID.randomUUID().toString());
+        MDC.put("applicationName", InetAddress.getLocalHost().getHostAddress());
+
         chain.doFilter(wrappingRequest, wrappingResponse);
 
         wrappingResponse.copyBodyToResponse(); // 캐시를 copy해 return될 response body에 저장
+
+        MDC.remove("requestId");
+        MDC.remove("applicationName");
     }
 
 }
@@ -229,9 +308,9 @@ Configuration:
       - name: log-db-filename
         value: "munzi-db-log.log"
       - name: log-pattern
-        value: "%highlight{[%-5p]}{FATAL=bg_red, ERROR=red, INFO=green, DEBUG=blue} %style{%d{yyyy/MM/dd HH:mm:ss.SSS}}{cyan} %style{%t}{yellow} %style{[%C{1.}.%M:%L]}{blue} %m%n"
+        value: "%highlight{[%-5p]}{FATAL=bg_red, ERROR=red, INFO=green, DEBUG=blue} %style{%d{yyyy/MM/dd HH:mm:ss.SSS}}{cyan} %style{[%X{applicationName} %X{requestId}]}{magenta} %style{%t}{yellow} %style{[%C{1.}.%M:%L]}{blue} %m%n"
       - name: log-pattern-no-color
-        value: "[%-5p] %d{yyyy/MM/dd HH:mm:ss.SSS} %t [%C{1.}.%M:%L] %m%n"
+        value: "[%-5p] %d{yyyy/MM/dd HH:mm:ss.SSS} [%X{applicationName} %X{requestId}] %t [%C{1.}.%M:%L] %m%n"
 
   Appenders: # 3
     Console:
@@ -391,18 +470,18 @@ Configuration:
 #            onMatch: DENY
 #            onMismatch: DENY
           - marker: LOG4JDBC_RESULTSETTABLE # jdbc.resultsettable
-            onMatch: ACCEPT
+            onMatch: DENY
             onMismatch: DENY
 
 # 88888888
-#			- name: log.munzi.interceptor
-#        includeLocation: TRUE
-#        additivity: FALSE
-#        level: DEBUG
-#        AppenderRef:
-#          - ref: Console_Appender
-#          - ref: Info_RollingFile_Appender
-#          - ref: Debug_RollingFile_Appender
+      - name: log.munzi.interceptor
+        includeLocation: TRUE
+        additivity: FALSE
+        level: DEBUG
+        AppenderRef:
+          - ref: Console_Appender
+          - ref: Info_RollingFile_Appender
+          - ref: Debug_RollingFile_Appender
 ```
 
 <aside>
@@ -447,7 +526,7 @@ Configuration:
     
     위 소스는 jdbc.resultsettable이면 찍고, 그 외에는 모두 찍지 않겠다고 설정해 놓은 것이다.
     
-8. 멀티모듈의 경우 로그를 해당 패키지가 아닌 이 로깅 모듈에서 설정한 interceptor(log.munzi.interceptor)에서 찍기 때문에 다음을 추가해 주어야 한다.
+8. req, res, err 로그를 log.munzi.interceptor에서 찍기 때문에 다음을 추가해 주어야 한다.
 
 ---
 
