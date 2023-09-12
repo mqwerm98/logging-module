@@ -1,6 +1,8 @@
 package log.munzi.interceptor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import log.munzi.interceptor.config.ApiLogProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,8 +11,6 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.Enumeration;
@@ -32,6 +32,8 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     private String requestMethodUri;
 
+    private long startTime;
+
 
     /**
      * Request API log를 찍는 부분.
@@ -48,6 +50,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        startTime = System.currentTimeMillis();
         requestMethodUri = request.getMethod() + " " + request.getRequestURI();
 
         if (apiLog.isUse() && apiLog.getRequest() != null) {
@@ -101,7 +104,9 @@ public class LoggingInterceptor implements HandlerInterceptor {
                         if (contentLength > textSizeToByteSize(apiLog.getRequest().getMaxBodySize())) {
                             body = "[" + byteCalculation(contentLength) + "]";
                         } else {
-                            body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator())).replaceAll("\\s", "");
+                            body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()))
+                                    .replaceAll("\\s", "")
+                                    .replaceAll("\b", "");
                         }
                     }
                 }
@@ -117,9 +122,9 @@ public class LoggingInterceptor implements HandlerInterceptor {
                 }
 
                 if (this.checkEndAsterisk(apiLog.getDebugApi(), requestMethodUri) || apiLog.getDebugApi().contains(requestMethodUri)) {
-                    log.debug("REQUEST [{}], \nheaders={}, \nparams={}, \nbody={}", requestMethodUri, headers, params, body);
+                    log.debug("REQ > [{}],\nheaders={},\nparams={},\nbody={}", requestMethodUri, headers, params, body);
                 } else {
-                    log.info("REQUEST [{}], \nheaders={}, \nparams={}, \nbody={}", requestMethodUri, headers, params, body);
+                    log.info("REQ > [{}],\nheaders={},\nparams={},\nbody={}", requestMethodUri, headers, params, body);
                 }
             }
         }
@@ -197,10 +202,11 @@ public class LoggingInterceptor implements HandlerInterceptor {
                     }
                 }
 
+                long responseTimeMs = System.currentTimeMillis() - startTime;
                 if (this.checkEndAsterisk(apiLog.getDebugApi(), requestMethodUri) || apiLog.getDebugApi().contains(requestMethodUri)) {
-                    log.debug("RESPONSE [{}], \nheaders={}, \npayload={}", requestMethodUri, headers, payload);
+                    log.debug("RES > {} [{}] {}ms,\nheaders={},\npayload={}", response.getStatus(), requestMethodUri, responseTimeMs, headers, payload);
                 } else {
-                    log.info("RESPONSE [{}], \nheaders={}, \npayload={}", requestMethodUri, headers, payload);
+                    log.info("RES > {} [{}] {}ms,\nheaders={},\npayload={}", response.getStatus(), requestMethodUri, responseTimeMs, headers, payload);
                 }
             }
         }

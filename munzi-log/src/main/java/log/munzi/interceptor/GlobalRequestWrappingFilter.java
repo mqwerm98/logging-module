@@ -1,25 +1,28 @@
 package log.munzi.interceptor;
 
+import jakarta.servlet.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import log.munzi.interceptor.config.ApiLogProperties;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
-import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Request Servlet에 담긴 내용을 열어서 Request, Response 로그를 남겨야 하지만
  * Request Servlet은 휘발성이기 때문에, 해당 내용을 response body에 담도록 설정하는 Filter 역할.
  */
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
+@Order(Ordered.LOWEST_PRECEDENCE)
 @RequiredArgsConstructor
 public class GlobalRequestWrappingFilter implements Filter {
 
@@ -56,9 +59,15 @@ public class GlobalRequestWrappingFilter implements Filter {
         HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request, secretApiList, maxSize);
         ContentCachingResponseWrapper wrappingResponse = new ContentCachingResponseWrapper((HttpServletResponse) response);
 
+        MDC.put("requestId", UUID.randomUUID().toString());
+        MDC.put("applicationName", InetAddress.getLocalHost().getHostAddress());
+
         chain.doFilter(wrappingRequest, wrappingResponse);
 
         wrappingResponse.copyBodyToResponse(); // 캐시를 copy해 return될 response body에 저장
+
+        MDC.remove("requestId");
+        MDC.remove("applicationName");
     }
 
 }
