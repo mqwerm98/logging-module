@@ -3,13 +3,13 @@ package log.munzi.interceptor;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 import log.munzi.interceptor.config.ApiLogProperties;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -57,14 +57,12 @@ public class GlobalRequestWrappingFilter implements Filter {
         }
 
         HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request, secretApiList, maxSize);
-        ContentCachingResponseWrapper wrappingResponse = new ContentCachingResponseWrapper((HttpServletResponse) response);
+        HttpServletResponse wrappingResponse = new MunziResponseWrapper((HttpServletResponse) response);
 
         MDC.put("requestId", UUID.randomUUID().toString());
         MDC.put("applicationName", InetAddress.getLocalHost().getHostAddress());
 
         chain.doFilter(wrappingRequest, wrappingResponse);
-
-        wrappingResponse.copyBodyToResponse(); // 캐시를 copy해 return될 response body에 저장
 
         MDC.remove("requestId");
         MDC.remove("applicationName");
