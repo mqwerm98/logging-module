@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
@@ -154,7 +153,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
             if ((!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || apiLog.isIgnoreSecurityLog())
                     && !inactiveYn
                     && !apiLog.getResponse().getInactiveApi().contains(requestMethodUri)) {
-                final ContentCachingResponseWrapper cachingResponse = (ContentCachingResponseWrapper) response;
+                final MunziResponseWrapper cachingResponse = (MunziResponseWrapper) response;
 
                 StringBuilder headersBuilder = new StringBuilder();
                 Enumeration<String> headerNames = request.getHeaderNames();
@@ -173,10 +172,10 @@ public class LoggingInterceptor implements HandlerInterceptor {
                 String payload = "";
                 String contentType = cachingResponse.getContentType();
                 if (contentType != null) {
-                    if (contentType.contains("application/json") && cachingResponse.getContentAsByteArray().length != 0) {
-                        payload = objectMapper.readTree(cachingResponse.getContentAsByteArray()).toString();
+                    if (contentType.contains("application/json") && cachingResponse.getContent() != null && !cachingResponse.getContent().isEmpty()) {
+                        payload = objectMapper.readTree(cachingResponse.getContent()).toString();
                     } else if (contentType.contains("text/plain")) {
-                        payload = new String(cachingResponse.getContentAsByteArray());
+                        payload = cachingResponse.getContent();
                     } else if (contentType.contains("multipart/form-data")) {
                         payload = "[multipart/form-data]";
                     }
