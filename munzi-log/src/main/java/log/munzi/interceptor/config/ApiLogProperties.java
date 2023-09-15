@@ -15,6 +15,11 @@ import java.util.List;
 @ConfigurationProperties(prefix = "api-log")
 public class ApiLogProperties {
 
+    // required(*)
+    // server명 (구분자 '-')
+    // "server명-profile-timestamp"로 로그 수집됐을 때 index명으로 사용
+    private String serverName;
+
     // true일 경우에만 security여도 로그 찍음
     private boolean ignoreSecurityLog = false;
 

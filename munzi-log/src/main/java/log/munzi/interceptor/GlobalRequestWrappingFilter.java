@@ -1,9 +1,9 @@
 package log.munzi.interceptor;
 
+import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpServletResponseWrapper;
 import log.munzi.interceptor.config.ApiLogProperties;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
@@ -28,6 +28,8 @@ public class GlobalRequestWrappingFilter implements Filter {
 
     private final ApiLogProperties apiLog;
 
+    private final String profile;
+
     @Override
     public void init(FilterConfig filterConfig) {
 
@@ -49,6 +51,10 @@ public class GlobalRequestWrappingFilter implements Filter {
      */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+        if (StringUtils.isBlank(apiLog.getServerName())) {
+            throw new IllegalArgumentException("api-log serverName is required.");
+        }
+
         List<String> secretApiList = new ArrayList<>();
         String maxSize = "";
         if (apiLog.getRequest() != null) {
@@ -59,8 +65,10 @@ public class GlobalRequestWrappingFilter implements Filter {
         HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request, secretApiList, maxSize);
         HttpServletResponse wrappingResponse = new MunziResponseWrapper((HttpServletResponse) response);
 
+
         MDC.put("requestId", UUID.randomUUID().toString());
-        MDC.put("applicationName", InetAddress.getLocalHost().getHostAddress());
+        String applicationName = apiLog.getServerName() + "-" + profile + " " + InetAddress.getLocalHost().getHostAddress();
+        MDC.put("applicationName", applicationName);
 
         chain.doFilter(wrappingRequest, wrappingResponse);
 
