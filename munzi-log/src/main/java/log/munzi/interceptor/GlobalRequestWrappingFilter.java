@@ -1,19 +1,22 @@
 package log.munzi.interceptor;
 
-import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import log.munzi.interceptor.config.ApiLogProperties;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.ContentCachingResponseWrapper;
 
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+
 
 /**
  * Request Servlet에 담긴 내용을 열어서 Request, Response 로그를 남겨야 하지만
@@ -25,6 +28,8 @@ import java.util.List;
 public class GlobalRequestWrappingFilter implements Filter {
 
     private final ApiLogProperties apiLog;
+
+    private final String profile;
 
     @Override
     public void init(FilterConfig filterConfig) {
@@ -47,6 +52,10 @@ public class GlobalRequestWrappingFilter implements Filter {
      */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
+        if (StringUtils.isBlank(apiLog.getServerName())) {
+            throw new IllegalArgumentException("api-log serverName is required.");
+        }
+
         List<String> secretApiList = new ArrayList<>();
         String maxSize = "";
         if (apiLog.getRequest() != null) {
@@ -55,11 +64,15 @@ public class GlobalRequestWrappingFilter implements Filter {
         }
 
         HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request, secretApiList, maxSize);
-        ContentCachingResponseWrapper wrappingResponse = new ContentCachingResponseWrapper((HttpServletResponse) response);
+        HttpServletResponse wrappingResponse = new MunziResponseWrapper((HttpServletResponse) response);
+
+        MDC.put("requestId", UUID.randomUUID().toString());
+        MDC.put("applicationName", InetAddress.getLocalHost().getHostAddress());
 
         chain.doFilter(wrappingRequest, wrappingResponse);
 
-        wrappingResponse.copyBodyToResponse(); // 캐시를 copy해 return될 response body에 저장
+        MDC.remove("requestId");
+        MDC.remove("applicationName");
     }
 
 }

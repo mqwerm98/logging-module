@@ -32,6 +32,8 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     private String requestMethodUri;
 
+    private long startTime;
+
 
     /**
      * Request API log를 찍는 부분.
@@ -48,6 +50,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        startTime = System.currentTimeMillis();
         requestMethodUri = request.getMethod() + " " + request.getRequestURI();
 
         if (apiLog.isUse() && apiLog.getRequest() != null) {
@@ -101,7 +104,9 @@ public class LoggingInterceptor implements HandlerInterceptor {
                         if (contentLength > textSizeToByteSize(apiLog.getRequest().getMaxBodySize())) {
                             body = "[" + byteCalculation(contentLength) + "]";
                         } else {
-                            body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator())).replaceAll("\\s", "");
+                            body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()))
+                                    .replaceAll("\\s", "")
+                                    .replaceAll("\b", "");
                         }
                     }
                 }
@@ -117,9 +122,9 @@ public class LoggingInterceptor implements HandlerInterceptor {
                 }
 
                 if (this.checkEndAsterisk(apiLog.getDebugApi(), requestMethodUri) || apiLog.getDebugApi().contains(requestMethodUri)) {
-                    log.debug("REQUEST [{}], \nheaders={}, \nparams={}, \nbody={}", requestMethodUri, headers, params, body);
+                    log.debug("REQ > [{}],\nheaders={},\nparams={},\nbody={}", requestMethodUri, headers, params, body);
                 } else {
-                    log.info("REQUEST [{}], \nheaders={}, \nparams={}, \nbody={}", requestMethodUri, headers, params, body);
+                    log.info("REQ > [{}],\nheaders={},\nparams={},\nbody={}", requestMethodUri, headers, params, body);
                 }
             }
         }
@@ -149,7 +154,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
             if ((!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || apiLog.isIgnoreSecurityLog())
                     && !inactiveYn
                     && !apiLog.getResponse().getInactiveApi().contains(requestMethodUri)) {
-                final ContentCachingResponseWrapper cachingResponse = (ContentCachingResponseWrapper) response;
+                final MunziResponseWrapper cachingResponse = (MunziResponseWrapper) response;
 
                 StringBuilder headersBuilder = new StringBuilder();
                 Enumeration<String> headerNames = request.getHeaderNames();
@@ -168,10 +173,10 @@ public class LoggingInterceptor implements HandlerInterceptor {
                 String payload = "";
                 String contentType = cachingResponse.getContentType();
                 if (contentType != null) {
-                    if (contentType.contains("application/json") && cachingResponse.getContentAsByteArray().length != 0) {
-                        payload = objectMapper.readTree(cachingResponse.getContentAsByteArray()).toString();
+                    if (contentType.contains("application/json") && cachingResponse.getContent() != null && !cachingResponse.getContent().isEmpty()) {
+                        payload = objectMapper.readTree(cachingResponse.getContent()).toString();
                     } else if (contentType.contains("text/plain")) {
-                        payload = new String(cachingResponse.getContentAsByteArray());
+                        payload = cachingResponse.getContent();
                     } else if (contentType.contains("multipart/form-data")) {
                         payload = "[multipart/form-data]";
                     }
@@ -197,10 +202,11 @@ public class LoggingInterceptor implements HandlerInterceptor {
                     }
                 }
 
+                long responseTimeMs = System.currentTimeMillis() - startTime;
                 if (this.checkEndAsterisk(apiLog.getDebugApi(), requestMethodUri) || apiLog.getDebugApi().contains(requestMethodUri)) {
-                    log.debug("RESPONSE [{}], \nheaders={}, \npayload={}", requestMethodUri, headers, payload);
+                    log.debug("RES > {} [{}] {}ms,\nheaders={},\npayload={}", response.getStatus(), requestMethodUri, responseTimeMs, headers, payload);
                 } else {
-                    log.info("RESPONSE [{}], \nheaders={}, \npayload={}", requestMethodUri, headers, payload);
+                    log.info("RES > {} [{}] {}ms,\nheaders={},\npayload={}", response.getStatus(), requestMethodUri, responseTimeMs, headers, payload);
                 }
             }
         }
