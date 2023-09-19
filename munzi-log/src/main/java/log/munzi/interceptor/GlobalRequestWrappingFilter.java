@@ -9,12 +9,15 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -62,16 +65,25 @@ public class GlobalRequestWrappingFilter implements Filter {
             maxSize = apiLog.getRequest().getMaxBodySize();
         }
 
-        HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request, secretApiList, maxSize);
-        HttpServletResponse wrappingResponse = new MunziResponseWrapper((HttpServletResponse) response);
-
-
+        // MDC 등록
         MDC.put("requestId", UUID.randomUUID().toString());
         String applicationName = apiLog.getServerName() + "-" + profile + " " + InetAddress.getLocalHost().getHostAddress();
         MDC.put("applicationName", applicationName);
 
-        chain.doFilter(wrappingRequest, wrappingResponse);
+        // request wrapping
+        HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request, secretApiList, maxSize);
 
+        // response wrapping & doFilter
+        // accept가 "text/event-stream" 인 경우, response flush 해버리면 안되기 때문에 response wrapping 하지 않음
+        if (Objects.equals(wrappingRequest.getHeader("accept"), MediaType.TEXT_EVENT_STREAM_VALUE)) {
+            chain.doFilter(wrappingRequest, response);
+        } else {
+            ContentCachingResponseWrapper wrappingResponse = new ContentCachingResponseWrapper((HttpServletResponse) response);
+            chain.doFilter(wrappingRequest, wrappingResponse);
+            wrappingResponse.copyBodyToResponse();
+        }
+
+        // MDC 등록 해제
         MDC.remove("requestId");
         MDC.remove("applicationName");
     }
