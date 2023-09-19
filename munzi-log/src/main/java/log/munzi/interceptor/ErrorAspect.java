@@ -6,6 +6,7 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
@@ -38,12 +39,24 @@ public class ErrorAspect {
     public void recordErrorLog(JoinPoint joinPoint, Object returnValue) {
         Exception exception = (Exception) joinPoint.getArgs()[0];
 
-        JSONObject jsonObject = new JSONObject(returnValue);
+        JSONObject jsonObject;
+        try {
+            jsonObject = new JSONObject(returnValue);
+        } catch (JSONException e) {
+            return;
+        }
+
+        if (jsonObject.isEmpty()) {
+            return;
+        }
+
         Integer httpStatus = null;
         if (jsonObject.has("httpStatus")) {
             httpStatus = jsonObject.getInt("httpStatus");
         } else if (jsonObject.has("status")) {
             httpStatus = jsonObject.getInt("status");
+        } else if (jsonObject.has("statusCodeValue")) {
+            httpStatus = jsonObject.getInt("statusCodeValue");
         }
 
         String errorCode = "";
@@ -51,10 +64,16 @@ public class ErrorAspect {
             errorCode = jsonObject.getString("errorCode");
         } else if (jsonObject.has("code")) {
             errorCode = jsonObject.getString("code");
-        } else if (jsonObject.has("properties")) {
-            JSONObject tmp = jsonObject.getJSONObject("properties");
-            if (tmp.has("errorCode")) {
-                errorCode = tmp.getString("errorCode");
+            JSONObject properties = jsonObject.getJSONObject("properties");
+            if (properties.has("errorCode")) {
+                errorCode = properties.getString("errorCode");
+            }
+        } else if (jsonObject.has("body")) {
+            JSONObject body = jsonObject.getJSONObject("body");
+            if (body.has("code")) {
+                errorCode = body.getString("code");
+            } else if (body.has("errorCode")) {
+                errorCode = body.getString("errorCode");
             }
         }
 
@@ -63,6 +82,13 @@ public class ErrorAspect {
             message = jsonObject.getString("message");
         } else if (jsonObject.has("detail")) {
             message = jsonObject.getString("detail");
+        } else if (jsonObject.has("body")) {
+            JSONObject body = jsonObject.getJSONObject("body");
+            if (body.has("message")) {
+                message = body.getString("message");
+            } else if (body.has("errorMessage")) {
+                message = body.getString("errorMessage");
+            }
         }
 
         String errorType = exception.getClass().getName();
