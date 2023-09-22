@@ -9,6 +9,9 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+
+import java.util.Objects;
 
 /**
  * Error Log를 일정 포맷에 맞게 찍어주는 Error Aspect
@@ -93,7 +96,14 @@ public class ErrorAspect {
         }
 
         String errorType = exception.getClass().getName();
-        String stackTrace = exception.getMessage();
+        String stackTrace;
+        if (errorType.equals("org.springframework.web.bind.MethodArgumentNotValidException")) {
+            MethodArgumentNotValidException e = (MethodArgumentNotValidException) exception;
+            stackTrace = String.format("[%s] %s", Objects.requireNonNull(e.getBindingResult().getFieldError()).getField(),
+                    e.getBindingResult().getAllErrors().get(0).getDefaultMessage());
+        } else {
+            stackTrace = exception.getMessage();
+        }
 
         log.error("ERR > httpStatus={}, errorCode=\"{}\", errorType=\"{}\", message=\"{}\",\nstackTrace=\"{}\"", httpStatus, errorCode, errorType, message, stackTrace);
     }

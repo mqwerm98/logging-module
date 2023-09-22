@@ -54,10 +54,6 @@ public class GlobalRequestWrappingFilter implements Filter {
      */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-        if (StringUtils.isBlank(apiLog.getServerName())) {
-            throw new IllegalArgumentException("api-log serverName is required.");
-        }
-
         List<String> secretApiList = new ArrayList<>();
         String maxSize = "";
         if (apiLog.getRequest() != null) {
@@ -67,7 +63,7 @@ public class GlobalRequestWrappingFilter implements Filter {
 
         // MDC 등록
         MDC.put("requestId", UUID.randomUUID().toString());
-        String applicationName = apiLog.getServerName() + "-" + profile + " " + InetAddress.getLocalHost().getHostAddress();
+        String applicationName = (!StringUtils.isBlank(apiLog.getServerName()) ? apiLog.getServerName() + "-" : "") + profile + " " + InetAddress.getLocalHost().getHostAddress();
         MDC.put("applicationName", applicationName);
 
         // request wrapping
