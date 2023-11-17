@@ -248,6 +248,71 @@ public class GlobalRequestWrappingFilter implements Filter {
 }
 ```
 
+
+### 6. globalRequestWrappingFilter 전에 다른 filter 등에 걸려서 Log가 안찍혀서 직접 찍어줘야 할 때
+
+ex) Spring security filter에서 에러가 나서 globalRequestWrappingFilter와 interceptor를 거치지 못해 request, error 로그를 찍지 못하는 상황.
+
+AuthenticationFailureHandler의 onAuthenticationFailure 에서
+request 값으로  loggingUtil.recordRequestLog 를 사용해 request log를 찍고 
+exception(AuthenticationException)과 return 값(ProblemDetail)으로 loggingUtil.recordErrorLog 를 사용해 error log를 찍는다.
+
+```java
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import log.munzi.interceptor.LoggingUtil;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.json.JSONException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+import java.net.UnknownHostException;
+
+/**
+ * 인증 실패 handler
+ */
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class AuthenticationFailureCustomHandler implements AuthenticationFailureHandler {
+
+    private final ObjectMapper objectMapper;
+    private final LoggingUtil loggingUtil;
+
+    @Override
+    public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response, AuthenticationException exception) throws IOException {
+        String requestId = null;
+        try {
+            requestId = loggingUtil.recordRequestLog(request, true);
+        } catch (Exception e) {
+            log.error("recordRequestLog error", e);
+        }
+
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        response.setStatus(HttpStatus.UNAUTHORIZED.value()); 
+
+				ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, exception.getMessage());
+				response.getWriter()
+                .write(objectMapper.writeValueAsString(problemDetail));
+        try {
+            loggingUtil.recordErrorLog(exception, problemDetail, requestId);
+        } catch (UnknownHostException | JSONException e) {
+            log.error("recordErrorLog error", e);
+        }
+    }
+}
+```
+
+
 ## 설정파일
 
 ---
