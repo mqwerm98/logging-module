@@ -61,13 +61,15 @@ public class GlobalRequestWrappingFilter implements Filter {
             maxSize = apiLog.getRequest().getMaxBodySize();
         }
 
-        // MDC 등록
-        MDC.put("requestId", UUID.randomUUID().toString());
-        String applicationName = (!StringUtils.isBlank(apiLog.getServerName()) ? apiLog.getServerName() + "-" : "") + profile + " " + InetAddress.getLocalHost().getHostAddress();
-        MDC.put("applicationName", applicationName);
-
         // request wrapping
         HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request, secretApiList, maxSize);
+
+        // MDC 등록
+        String requestId = StringUtils.isNotBlank(apiLog.getRequestIdHeaderKey()) && wrappingRequest.getHeader(apiLog.getRequestIdHeaderKey()) != null ?
+                wrappingRequest.getHeader(apiLog.getRequestIdHeaderKey()) : UUID.randomUUID().toString();
+        MDC.put("requestId", requestId);
+        String applicationName = (!StringUtils.isBlank(apiLog.getServerName()) ? apiLog.getServerName() + "-" : "") + profile + " " + InetAddress.getLocalHost().getHostAddress();
+        MDC.put("applicationName", applicationName);
 
         // response wrapping & doFilter
         // accept가 "text/event-stream" 인 경우, response flush 해버리면 안되기 때문에 response wrapping 하지 않음

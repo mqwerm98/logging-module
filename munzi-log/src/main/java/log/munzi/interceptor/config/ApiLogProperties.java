@@ -40,6 +40,9 @@ public class ApiLogProperties {
 
     private boolean jsonPretty = false;
 
+    // requestId를 직접 정해줄 경우, header에서 사용할 key값
+    private String requestIdHeaderKey;
+
 
     /**
      * API Log 설정 Request, Response DTO

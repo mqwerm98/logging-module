@@ -66,7 +66,7 @@ public class LoggingUtil {
 
 
         // request wrapping
-        HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request, secretApiList, maxSize);
+        HttpServletRequest wrappingRequest = new ReadableRequestWrapper(request, secretApiList, maxSize);
 
         // log를 찍는 부분
         loggingInterceptor.preHandle(wrappingRequest, null, null);
@@ -91,18 +91,18 @@ public class LoggingUtil {
             maxSize = apiLog.getRequest().getMaxBodySize();
         }
 
+        // request wrapping
+        HttpServletRequest wrappingRequest = new ReadableRequestWrapper(request, secretApiList, maxSize);
 
         String requestId;
         if (createRequestIdYn) {
-            requestId = UUID.randomUUID().toString();
+            requestId = StringUtils.isNotBlank(apiLog.getRequestIdHeaderKey()) && wrappingRequest.getHeader(apiLog.getRequestIdHeaderKey()) != null ?
+                    wrappingRequest.getHeader(apiLog.getRequestIdHeaderKey()) : UUID.randomUUID().toString();
             MDC.put("requestId", requestId);
             MDC.put("applicationName", (!StringUtils.isBlank(apiLog.getServerName()) ? apiLog.getServerName() + "-" : "") + profile + " " + InetAddress.getLocalHost().getHostAddress());
         } else {
             requestId = MDC.get("requestId");
         }
-
-        // request wrapping
-        HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request, secretApiList, maxSize);
 
         // log를 찍는 부분
         loggingInterceptor.preHandle(wrappingRequest, null, null);

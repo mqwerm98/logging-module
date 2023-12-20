@@ -112,7 +112,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
                         } else {
                             body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()))
                                     .replaceAll("\\s", "")
-                                    .replaceAll("\b", "");
+                                    .replaceAll("\\b", "");
                         }
                     }
                 }
