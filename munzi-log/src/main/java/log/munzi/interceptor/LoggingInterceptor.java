@@ -3,7 +3,7 @@ package log.munzi.interceptor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import log.munzi.interceptor.config.ApiLogProperties;
+import log.munzi.config.ApiLogProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 /**
  * Interceptor 단계에서 HttpServletRequest, HttpServletResponse 등을 가로채
  * API의 Request, Response log를 찍어준다.
+ *
+ * log type : REQ, RES
  */
 @Slf4j
 @RequiredArgsConstructor

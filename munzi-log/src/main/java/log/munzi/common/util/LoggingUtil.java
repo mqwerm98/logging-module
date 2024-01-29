@@ -1,12 +1,19 @@
-package log.munzi.interceptor;
+package log.munzi.common.util;
 
 import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
-import log.munzi.interceptor.config.ApiLogProperties;
+import log.munzi.config.ApiLogProperties;
+import log.munzi.error.ErrorAspect;
+import log.munzi.interceptor.LoggingInterceptor;
+import log.munzi.interceptor.ReadableRequestWrapper;
+import log.munzi.stacktrace.error.StackTraceErrorWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
 import java.net.InetAddress;
@@ -22,25 +29,31 @@ import java.util.UUID;
 @Slf4j
 public class LoggingUtil {
 
+    private final Logger errorAspectLog = LoggerFactory.getLogger(ErrorAspect.class);
+
     private final LoggingInterceptor loggingInterceptor;
 
     private final ApiLogProperties apiLog;
 
     private final String profile;
 
+    private final StackTraceErrorWriter stackTraceErrorWriter;
+
     /**
      * loggingInterceptor의 preHandle 기능을 그대로 사용하기 위함으로
      * LoggingInterceptor와 interceptor에 오기 전 GlobalRequestWrappingFilter에서 실행하는
      * wrapping 및 MDC 설정을 해주기 위해 Filter에서 받는 값을 그대로 가져온다.
      *
-     * @param loggingInterceptor loggingInterception
-     * @param apiLog             apiLogProperties
-     * @param profile            profile
+     * @param loggingInterceptor    loggingInterception
+     * @param apiLog                apiLogProperties
+     * @param profile               profile
+     * @param stackTraceErrorWriter stackTraceErrorWriter
      */
-    public LoggingUtil(LoggingInterceptor loggingInterceptor, ApiLogProperties apiLog, String profile) {
+    public LoggingUtil(LoggingInterceptor loggingInterceptor, ApiLogProperties apiLog, String profile, StackTraceErrorWriter stackTraceErrorWriter) {
         this.loggingInterceptor = loggingInterceptor;
         this.apiLog = apiLog;
         this.profile = profile;
+        this.stackTraceErrorWriter = stackTraceErrorWriter;
     }
 
 
@@ -239,7 +252,11 @@ public class LoggingUtil {
             stackTrace = exception.getMessage();
         }
 
-        log.error("ERR > httpStatus={}, errorCode=\"{}\", errorType=\"{}\", message=\"{}\",\nstackTrace=\"{}\"", httpStatus, errorCode, errorType, message, stackTrace);
+        errorAspectLog.error("ERR > httpStatus={}, errorCode=\"{}\", errorType=\"{}\", message=\"{}\",\nstackTrace=\"{}\"", httpStatus, errorCode, errorType, message, stackTrace);
+
+        if (apiLog.isStackTracePrintYn() && httpStatus != null && HttpStatus.valueOf(httpStatus).is5xxServerError()) {
+            stackTraceErrorWriter.writeStackTraceError(httpStatus, errorCode, errorType, message, exception);
+        }
     }
 
 }

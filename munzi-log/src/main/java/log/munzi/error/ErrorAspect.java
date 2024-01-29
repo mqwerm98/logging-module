@@ -1,5 +1,7 @@
-package log.munzi.interceptor;
+package log.munzi.error;
 
+import log.munzi.config.ApiLogProperties;
+import log.munzi.stacktrace.error.StackTraceErrorWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
@@ -8,6 +10,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
@@ -15,6 +18,8 @@ import java.util.Objects;
 
 /**
  * Error Log를 일정 포맷에 맞게 찍어주는 Error Aspect
+ *
+ * log type : ERR
  * example format : ERR > httpStatus=400, errorCode="E001", errorType="org.springframework.web.bind.MethodArgumentNotValidException", message="널이어서는 안됩니다",\nstackTrace="Validation failed for argument..."
  */
 @Slf4j
@@ -22,6 +27,9 @@ import java.util.Objects;
 @Component
 @RequiredArgsConstructor
 public class ErrorAspect {
+
+    private final ApiLogProperties apiLog;
+    private final StackTraceErrorWriter stackTraceErrorWriter;
 
     /**
      * exception handler pointcut
@@ -106,6 +114,10 @@ public class ErrorAspect {
         }
 
         log.error("ERR > httpStatus={}, errorCode=\"{}\", errorType=\"{}\", message=\"{}\",\nstackTrace=\"{}\"", httpStatus, errorCode, errorType, message, stackTrace);
+
+        if (apiLog.isStackTracePrintYn() && httpStatus != null && HttpStatus.valueOf(httpStatus).is5xxServerError()) {
+            stackTraceErrorWriter.writeStackTraceError(httpStatus, errorCode, errorType, message, exception);
+        }
     }
 
 }

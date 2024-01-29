@@ -1,4 +1,4 @@
-package log.munzi.interceptor.config;
+package log.munzi.config;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -43,6 +43,8 @@ public class ApiLogProperties {
     // requestId를 직접 정해줄 경우, header에서 사용할 key값
     private String requestIdHeaderKey;
 
+    // 500 에러가 났을 경우, ErrorAspect에서 stackTrace가 포함된 에러를 추가로 찍을 지에 대한 여부
+    private boolean stackTracePrintYn = false;
 
     /**
      * API Log 설정 Request, Response DTO

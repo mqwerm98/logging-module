@@ -4,7 +4,7 @@ import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import log.munzi.interceptor.config.ApiLogProperties;
+import log.munzi.config.ApiLogProperties;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
 import org.springframework.core.Ordered;
