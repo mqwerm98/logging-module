@@ -48,7 +48,7 @@ repositories {
 }
 
 dependencies {
-	implementation group:'log.munzi', name:'munzi-log', version:'0.1.3'
+	implementation group:'log.munzi', name:'munzi-log', version:'0.1.12'
 
 	implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: "${version_log4j}"
 	implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: "${version_log4j}"
@@ -75,40 +75,60 @@ public class ApiApplication {
 }
 ```
 
-### 2. Filter, Interceptor bean 등록
+### 2. Filter, Interceptor, Error 관리, util bean 등록
 
 <LoggingConfig.java>
 
 ```java
 import com.fasterxml.jackson.databind.ObjectMapper;
+import log.munzi.common.util.LoggingUtil;
+import log.munzi.config.ApiLogProperties;
+import log.munzi.error.ErrorAspect;
 import log.munzi.interceptor.GlobalRequestWrappingFilter;
 import log.munzi.interceptor.LoggingInterceptor;
-import log.munzi.interceptor.config.ApiLogProperties;
+import log.munzi.stacktrace.error.StackTraceErrorWriter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import log.munzi.interceptor.ErrorAspect;
 
 @Configuration
 @RequiredArgsConstructor
+@Slf4j
 public class LoggingConfig {
 
-    public final ApiLogProperties apiLogProperties;
+    private final ObjectMapper objectMapper;
+    private final ApiLogProperties apiLogProperties;
+
+    @Value("${spring.profiles.active}")
+    private String profile;
 
     @Bean
     public LoggingInterceptor loggingInterceptor() {
-        return new LoggingInterceptor(new ObjectMapper(), apiLogProperties);
+        return new LoggingInterceptor(objectMapper, apiLogProperties);
     }
 
-    @Bean // security 사용시에만 등록
+    @Bean
+    public StackTraceErrorWriter stackTraceErrorWriter() {
+        return new StackTraceErrorWriter();
+    }
+
+    @Bean
     public GlobalRequestWrappingFilter globalRequestWrappingFilter() {
-        return new GlobalRequestWrappingFilter(apiLogProperties);
+        return new GlobalRequestWrappingFilter(apiLogProperties, profile);
     }
 
-    @Bean // error log 찍을때에만 등록
+    @Bean
     public ErrorAspect errorAspect() {
-        return new ErrorAspect();
+        return new ErrorAspect(apiLogProperties, stackTraceErrorWriter());
     }
+
+    @Bean
+    public LoggingUtil loggingUtil() {
+        return new LoggingUtil(loggingInterceptor(), apiLogProperties, profile, stackTraceErrorWriter());
+    }
+
 }
 ```
 
@@ -170,86 +190,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
 }
 ```
 
-### 5. interceptor 사용을 위한 Filter 처리
 
-<GlobalRequestWrappingFilter.java>
-
-```java
-import jakarta.servlet.*;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import log.munzi.interceptor.config.ApiLogProperties;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.MDC;
-import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
-import org.springframework.web.util.ContentCachingResponseWrapper;
-
-import java.io.IOException;
-import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-
-/**
- * Request Servlet에 담긴 내용을 열어서 Request, Response 로그를 남겨야 하지만
- * Request Servlet은 휘발성이기 때문에, 해당 내용을 response body에 담도록 설정하는 Filter 역할.
- */
-@Component
-@Order(Ordered.LOWEST_PRECEDENCE)
-@RequiredArgsConstructor
-public class GlobalRequestWrappingFilter implements Filter {
-
-    private final ApiLogProperties apiLog;
-
-    @Override
-    public void init(FilterConfig filterConfig) {
-
-    }
-
-    @Override
-    public void destroy() {
-
-    }
-
-    /**
-     * Request Servlet 에 담긴 내용을 열어보면 휘발되기 때문에, 로그로 남기기 위해 response body 에 담는 과정
-     *
-     * @param request  ServletRequest
-     * @param response ServletResponse
-     * @param chain    Filter chain
-     * @throws IOException      copyBodyToResponse 과정에서의 Exception
-     * @throws ServletException doFilter 과정에서의 Exception
-     */
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-        List<String> secretApiList = new ArrayList<>();
-        String maxSize = "";
-        if (apiLog.getRequest() != null) {
-            secretApiList = apiLog.getRequest().getSecretApi();
-            maxSize = apiLog.getRequest().getMaxBodySize();
-        }
-
-        HttpServletRequest wrappingRequest = new ReadableRequestWrapper((HttpServletRequest) request, secretApiList, maxSize);
-        ContentCachingResponseWrapper wrappingResponse = new ContentCachingResponseWrapper((HttpServletResponse) response);
-
-        MDC.put("requestId", UUID.randomUUID().toString());
-        MDC.put("applicationName", InetAddress.getLocalHost().getHostAddress());
-
-        chain.doFilter(wrappingRequest, wrappingResponse);
-
-        wrappingResponse.copyBodyToResponse(); // 캐시를 copy해 return될 response body에 저장
-
-        MDC.remove("requestId");
-        MDC.remove("applicationName");
-    }
-
-}
-```
-
-
-### 6. globalRequestWrappingFilter 전에 다른 filter 등에 걸려서 Log가 안찍혀서 직접 찍어줘야 할 때
+### 5. globalRequestWrappingFilter 전에 다른 filter 등에 걸려서 Log가 안찍혀서 직접 찍어줘야 할 때
 
 ex) Spring security filter에서 에러가 나서 globalRequestWrappingFilter와 interceptor를 거치지 못해 request, error 로그를 찍지 못하는 상황.
 
@@ -262,7 +204,7 @@ exception(AuthenticationException)과 return 값(ProblemDetail)으로 loggingUti
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import log.munzi.interceptor.LoggingUtil;
+import log.munzi.common.util.LoggingUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONException;
@@ -300,8 +242,8 @@ public class AuthenticationFailureCustomHandler implements AuthenticationFailure
         response.setCharacterEncoding("UTF-8");
         response.setStatus(HttpStatus.UNAUTHORIZED.value()); 
 
-				ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, exception.getMessage());
-				response.getWriter()
+	ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, exception.getMessage());
+	response.getWriter()
                 .write(objectMapper.writeValueAsString(problemDetail));
         try {
             loggingUtil.recordErrorLog(exception, problemDetail, requestId);
@@ -333,18 +275,22 @@ logging:
   # config: classpath:log4j2-local.yml # resources 하위의 경우
 
 api-log:
+  server-name: munzi-nene-project
+  request-id-header-key: X-Request-ID # requestId를 원하는 값으로 찍고 싶을 경우, header에 담아서 찍을 수 있는데 그 때 header에서 사용할 key
+  stack-trace-print-yn: true # default = false, true일 경우 500번대 에러가 났을 때 StackTrace도 같이 찍음
   ignore-security-log: true # default = false, true일 경우에만 security여도 로그 찍음
   use: true # request, response 로그를 찍는지 여부
-  json-pretty: true # request, response 로그 내 json 데이터를 정렬해서 보여줄지 여부
-  debug-api: GET /api/debug/* # info가 아닌, debug로 찍고 싶은 api 목록
+  json-pretty: false # request, response 로그 내 json 데이터를 정렬해서 보여줄지 여부
+  debug-api: GET /api/debug/*
   request:
     max-body-size: 1 MB # request body max size
-    secret-api: # 해당 api의 경우, body 전체를 로그에 안찍음
+    secret-api: POST /api/sjsj # 해당 api의 경우, body 전체를 로그에 안찍음
     inactive-api: GET /api/webjars/*, GET /api/, GET /api/swagger*, GET /api/code/*, OPTIONS /api/code/*
   response:
     max-body-size: 10 KB # response body max size
     secret-api:
     inactive-api: GET /api/webjars/*, GET /api/, GET /api/swagger*, GET /api/code/*, OPTIONS /api/code/*
+
 
 ```
 
@@ -365,18 +311,25 @@ Configuration:
   Properties: # 2
     Property:
       - name: package-name
-        value: "log.munzi"
+        value: "xxx.xxx.xxx"
       - name: log-path
         value: "/apps/logs/munzi-log"
       - name: log-filename
         value: "munzi-log.log"
+      - name: req-res-log-filename
+        value: "munzi-log-req-res.log"
+      - name: err-stack-trace-log-filename
+        value: "munzi-log-err-stack-trace.log"
+      - name: event-log-filename
+        value: "munzi-log-event.log"
+      - name: scheduler-log-filename
+        value: "munzi-log-sch.log"
       - name: log-db-filename
         value: "munzi-db-log.log"
       - name: log-pattern
         value: "%highlight{[%-5p]}{FATAL=bg_red, ERROR=red, INFO=green, DEBUG=blue} %style{%d{yyyy/MM/dd HH:mm:ss.SSS}}{cyan} %style{[%X{applicationName} %X{requestId}]}{magenta} %style{%t}{yellow} %style{[%C{1.}.%M:%L]}{blue} %m%n"
       - name: log-pattern-no-color
         value: "[%-5p] %d{yyyy/MM/dd HH:mm:ss.SSS} [%X{applicationName} %X{requestId}] %t [%C{1.}.%M:%L] %m%n"
-
   Appenders: # 3
     Console:
       name: Console_Appender
@@ -469,6 +422,86 @@ Configuration:
             maxDepth: 1
             IfAccumulatedFileCount:
               exceeds: 31
+      - name: Info_Req_Res_RollingFile_Appender
+        fileName: ${log-path}/${req-res-log-filename}
+        filePattern: ${log-path}/archive/${req-res-log-filename}.%d{yyyy-MM-dd-hh-mm}.gz
+        PatternLayout:
+          pattern: ${log-pattern-no-color}
+        LevelRangeFilter:
+          minLevel: FATAL
+          maxLevel: INFO
+          onMatch: ACCEPT
+          onMismatch: DENY
+        Policies:
+          SizeBasedTriggeringPolicy:
+            size: 500 MB
+        DefaultRollOverStrategy:
+          max: 30
+          Delete:
+            basePath: ${log-path}/archive
+            maxDepth: 1
+            IfAccumulatedFileCount:
+              exceeds: 31
+      - name: Err_StackTrace_RollingFile_Appender
+        fileName: ${log-path}/${err-stack-trace-log-filename}
+        filePattern: ${log-path}/archive/${err-stack-trace-log-filename}.%d{yyyy-MM-dd-hh-mm}.gz
+        PatternLayout:
+          pattern: ${log-pattern-no-color}
+        LevelRangeFilter:
+          minLevel: FATAL
+          maxLevel: ERROR
+          onMatch: ACCEPT
+          onMismatch: DENY
+        Policies:
+          SizeBasedTriggeringPolicy:
+            size: 500 MB
+        DefaultRollOverStrategy:
+          max: 30
+          Delete:
+            basePath: ${log-path}/archive
+            maxDepth: 1
+            IfAccumulatedFileCount:
+              exceeds: 31
+      - name: Info_Event_RollingFile_Appender
+        fileName: ${log-path}/${event-log-filename}
+        filePattern: ${log-path}/archive/${event-log-filename}.%d{yyyy-MM-dd-hh-mm}.gz
+        PatternLayout:
+          pattern: ${log-pattern-no-color}
+        LevelRangeFilter:
+          minLevel: FATAL
+          maxLevel: INFO
+          onMatch: ACCEPT
+          onMismatch: DENY
+        Policies:
+          SizeBasedTriggeringPolicy:
+            size: 500 MB
+        DefaultRollOverStrategy:
+          max: 30
+          Delete:
+            basePath: ${log-path}/archive
+            maxDepth: 1
+            IfAccumulatedFileCount:
+              exceeds: 31
+      - name: Info_Scheduler_RollingFile_Appender
+        fileName: ${log-path}/${scheduler-log-filename}
+        filePattern: ${log-path}/archive/${scheduler-log-filename}.%d{yyyy-MM-dd-hh-mm}.gz
+        PatternLayout:
+          pattern: ${log-pattern-no-color}
+        LevelRangeFilter:
+          minLevel: FATAL
+          maxLevel: INFO
+          onMatch: ACCEPT
+          onMismatch: DENY
+        Policies:
+          SizeBasedTriggeringPolicy:
+            size: 500 MB
+        DefaultRollOverStrategy:
+          max: 30
+          Delete:
+            basePath: ${log-path}/archive
+            maxDepth: 1
+            IfAccumulatedFileCount:
+              exceeds: 31
 
   Loggers: # 4
     Root: # 5
@@ -500,12 +533,6 @@ Configuration:
         level: ERROR
         AppenderRef:
           - ref: RollingDBFile_Appender
-#      - name: org.hibernate.SQL
-#        includeLocation: TRUE
-#        additivity: FALSE
-#        level: DEBUG
-#        AppenderRef:
-#          - ref: RollingDBFile_Appender
 
       - name: log4jdbc.log4j2 # 7
         includeLocation: TRUE
@@ -542,11 +569,43 @@ Configuration:
       - name: log.munzi.interceptor
         includeLocation: TRUE
         additivity: FALSE
-        level: DEBUG
+        level: INFO
         AppenderRef:
           - ref: Console_Appender
-          - ref: Info_RollingFile_Appender
+          - ref: Info_Req_Res_RollingFile_Appender
           - ref: Debug_RollingFile_Appender
+
+      - name: log.munzi.error
+        includeLocation: TRUE
+        additivity: FALSE
+        level: ERROR
+        AppenderRef:
+          - ref: Console_Appender
+          - ref: Info_Req_Res_RollingFile_Appender
+
+      - name: log.munzi.stacktrace.error
+        includeLocation: TRUE
+        additivity: FALSE
+        level: ERROR
+        AppenderRef:
+          - ref: Console_Appender
+          - ref: Err_StackTrace_RollingFile_Appender
+
+      - name: xxx.xxx.xxx.event.component
+        includeLocation: TRUE
+        additivity: FALSE
+        level: INFO
+        AppenderRef:
+          - ref: Console_Appender
+          - ref: Info_Event_RollingFile_Appender
+
+      - name: xxx.xxx.xxx.scheduler
+        includeLocation: TRUE
+        additivity: FALSE
+        level: INFO
+        AppenderRef:
+          - ref: Console_Appender
+          - ref: Info_Scheduler_RollingFile_Appender
 ```
 
 <aside>
