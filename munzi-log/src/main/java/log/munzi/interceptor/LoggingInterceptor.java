@@ -3,22 +3,27 @@ package log.munzi.interceptor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import log.munzi.interceptor.config.ApiLogProperties;
+import log.munzi.config.ApiLogProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.util.ContentCachingResponseWrapper;
 
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
  * Interceptor 단계에서 HttpServletRequest, HttpServletResponse 등을 가로채
  * API의 Request, Response log를 찍어준다.
+ *
+ * log type : REQ, RES
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -32,6 +37,9 @@ public class LoggingInterceptor implements HandlerInterceptor {
     private String requestMethodUri;
 
     private long startTime;
+
+    // request headers - accept
+    private String requestAccept;
 
 
     /**
@@ -51,6 +59,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         startTime = System.currentTimeMillis();
         requestMethodUri = request.getMethod() + " " + request.getRequestURI();
+        requestAccept = request.getHeader("accept");
 
         if (apiLog.isUse() && apiLog.getRequest() != null) {
             // inactive api '*' check
@@ -105,7 +114,7 @@ public class LoggingInterceptor implements HandlerInterceptor {
                         } else {
                             body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()))
                                     .replaceAll("\\s", "")
-                                    .replaceAll("\b", "");
+                                    .replaceAll("\\b", "");
                         }
                     }
                 }
@@ -146,15 +155,13 @@ public class LoggingInterceptor implements HandlerInterceptor {
      */
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
-        if (apiLog.isUse() && apiLog.getResponse() != null) {
+        if (!Objects.equals(requestAccept, MediaType.TEXT_EVENT_STREAM_VALUE) && apiLog.isUse() && apiLog.getResponse() != null) {
             // inactive api '*' check
             boolean inactiveYn = this.checkEndAsterisk(apiLog.getResponse().getInactiveApi(), requestMethodUri);
 
             if ((!request.getClass().getName().contains("SecurityContextHolderAwareRequestWrapper") || apiLog.isIgnoreSecurityLog())
                     && !inactiveYn
                     && !apiLog.getResponse().getInactiveApi().contains(requestMethodUri)) {
-                final MunziResponseWrapper cachingResponse = (MunziResponseWrapper) response;
-
                 StringBuilder headersBuilder = new StringBuilder();
                 Enumeration<String> headerNames = request.getHeaderNames();
                 String headerName;
@@ -170,12 +177,15 @@ public class LoggingInterceptor implements HandlerInterceptor {
                 if (headersLength >= 2) headersBuilder.delete(headersLength - 2, headersLength);
 
                 String payload = "";
-                String contentType = cachingResponse.getContentType();
+                final ContentCachingResponseWrapper wrappingResponse = (ContentCachingResponseWrapper) response;
+                String contentType = wrappingResponse.getContentType();
                 if (contentType != null) {
-                    if (contentType.contains("application/json") && cachingResponse.getContent() != null && !cachingResponse.getContent().isEmpty()) {
-                        payload = objectMapper.readTree(cachingResponse.getContent()).toString();
+                    if (contentType.contains("application/json") && wrappingResponse.getContentAsByteArray().length != 0) {
+                        payload = objectMapper.readTree(wrappingResponse.getContentAsByteArray()).toString();
+
                     } else if (contentType.contains("text/plain")) {
-                        payload = cachingResponse.getContent();
+                        payload = new String(wrappingResponse.getContentAsByteArray());
+
                     } else if (contentType.contains("multipart/form-data")) {
                         payload = "[multipart/form-data]";
                     }
