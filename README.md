@@ -1,4 +1,4 @@
-# Munzi Log - API Server를 위한 Request, Response Logging 처리 모듈
+# Munzi Log - API Server를 위한 Request, Response, Error Logging 처리 모듈
 
 ## 적용 예시
 ```bash
