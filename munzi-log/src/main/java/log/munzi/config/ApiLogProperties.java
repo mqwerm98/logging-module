@@ -46,6 +46,9 @@ public class ApiLogProperties {
     // 500 에러가 났을 경우, ErrorAspect에서 stackTrace가 포함된 에러를 추가로 찍을 지에 대한 여부
     private boolean stackTracePrintYn = false;
 
+    // stack trace에 찍을 패키지명
+    private String stackTracePackageName;
+
     /**
      * API Log 설정 Request, Response DTO
      */

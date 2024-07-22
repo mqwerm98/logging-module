@@ -12,8 +12,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -104,13 +107,24 @@ public class ErrorAspect {
         }
 
         String errorType = exception.getClass().getName();
-        String stackTrace;
+        StringBuilder stackTrace = new StringBuilder();
         if (errorType.equals("org.springframework.web.bind.MethodArgumentNotValidException")) {
             MethodArgumentNotValidException e = (MethodArgumentNotValidException) exception;
-            stackTrace = String.format("[%s] %s", Objects.requireNonNull(e.getBindingResult().getFieldError()).getField(),
-                    e.getBindingResult().getAllErrors().get(0).getDefaultMessage());
+            stackTrace.append(String.format("[%s] %s", Objects.requireNonNull(e.getBindingResult().getFieldError()).getField(),
+                    e.getBindingResult().getAllErrors().get(0).getDefaultMessage()));
         } else {
-            stackTrace = exception.getMessage();
+            stackTrace.append(exception.getMessage());
+        }
+
+        // stackTrace에 해당 패키지 관련 stack log 추가
+        if (!ObjectUtils.isEmpty(apiLog.getStackTracePackageName())) {
+            List<String> list = Arrays.stream(exception.getStackTrace())
+                    .filter(f -> f.getClassName().contains(apiLog.getStackTracePackageName()))
+                    .map(Object::toString)
+                    .toList();
+            for (String l : list) {
+                stackTrace.append("\n").append(l);
+            }
         }
 
         log.error("ERR > httpStatus={}, errorCode=\"{}\", errorType=\"{}\", message=\"{}\",\nstackTrace=\"{}\"", httpStatus, errorCode, errorType, message, stackTrace);
