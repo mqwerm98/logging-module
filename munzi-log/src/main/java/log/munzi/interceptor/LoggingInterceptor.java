@@ -34,14 +34,6 @@ public class LoggingInterceptor implements HandlerInterceptor {
 
     private final ApiLogProperties apiLog;
 
-    private String requestMethodUri;
-
-    private long startTime;
-
-    // request headers - accept
-    private String requestAccept;
-
-
     /**
      * Request API log를 찍는 부분.
      * 설정파일의 secret 여부, 길이 제한 등을 체크해 설정대로 로그를 남긴다.
@@ -57,9 +49,14 @@ public class LoggingInterceptor implements HandlerInterceptor {
      */
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        startTime = System.currentTimeMillis();
-        requestMethodUri = request.getMethod() + " " + request.getRequestURI();
-        requestAccept = request.getHeader("accept");
+        long startTime = System.currentTimeMillis();
+        String requestMethodUri = request.getMethod() + " " + request.getRequestURI();
+        String requestAccept = request.getHeader("accept");
+
+        // HttpServletRequest에 값 저장
+        request.setAttribute("startTime", startTime);
+        request.setAttribute("requestMethodUri", requestMethodUri);
+        request.setAttribute("requestAccept", requestAccept);
 
         if (apiLog.isUse() && apiLog.getRequest() != null) {
             // inactive api '*' check
@@ -155,6 +152,10 @@ public class LoggingInterceptor implements HandlerInterceptor {
      */
     @Override
     public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        String requestMethodUri = (String) request.getAttribute("requestMethodUri");
+        long startTime = (long) request.getAttribute("startTime");
+        String requestAccept = (String) request.getAttribute("requestAccept");
+
         if (!Objects.equals(requestAccept, MediaType.TEXT_EVENT_STREAM_VALUE) && apiLog.isUse() && apiLog.getResponse() != null) {
             // inactive api '*' check
             boolean inactiveYn = this.checkEndAsterisk(apiLog.getResponse().getInactiveApi(), requestMethodUri);
